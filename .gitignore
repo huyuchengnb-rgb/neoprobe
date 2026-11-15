@@ -8,6 +8,7 @@ __pycache__/
 # Build & release artifacts
 build/
 dist/
+_site/
 *.spec
 
 # Local captures, logs, and scratch databases

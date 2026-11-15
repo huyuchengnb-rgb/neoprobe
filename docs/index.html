@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeoProbe · 服务器监控</title>
+<link rel="icon" type="image/png" href="./favicon.png">
+<style>
+  :root{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#fbfbfe;
+    --ink:#1d1f2b; --ink2:#4a4e63; --ink3:#7b8199;
+    --line:#e6e8f2; --line2:#d8dcec;
+    --accent:#5b4bd6; --accent2:#7a68f0; --accentbg:#efedff;
+    --ok:#1f7a4d; --okbg:#e8f6ee;
+    --warn:#b7791f; --warnbg:#fdf4e3;
+    --bad:#c0392b; --badbg:#fdecea;
+    --mono:"Cascadia Mono",Consolas,"SF Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+    font-size:14px;line-height:1.6;
+  }
+  .app{max-width:1280px;margin:0 auto;padding:22px 24px 60px}
+
+  /* ---------- 顶栏 ---------- */
+  .top{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .logo{
+    width:38px;height:38px;border-radius:10px;flex:none;
+    background:linear-gradient(140deg,#6756e0,#8d7bf5);
+    box-shadow:0 4px 12px rgba(103,86,224,.28);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .logo svg{width:21px;height:21px}
+  h1{margin:0;font-size:19px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  .badge-web{
+    font-size:11px;font-weight:600;padding:1px 8px;border-radius:12px;
+    background:var(--accentbg);color:var(--accent);letter-spacing:.2px;
+  }
+  .sub{color:var(--ink3);font-size:12.5px;margin-top:1px}
+  .stats{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
+  .stat{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:8px 15px;min-width:92px;
+  }
+  .stat b{display:block;font-size:19px;line-height:1.25;font-family:var(--mono)}
+  .stat span{color:var(--ink3);font-size:11.5px}
+
+  /* ---------- 工具条 ---------- */
+  .bar{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  input[type=text],input[type=url],select{
+    font-family:inherit;font-size:13.5px;color:var(--ink);
+    background:var(--panel2);border:1px solid var(--line2);border-radius:8px;
+    padding:8px 12px;outline:none;transition:.15s;
+  }
+  input[type=text]:focus,input[type=url]:focus,select:focus{
+    border-color:var(--accent2);box-shadow:0 0 0 3px rgba(122,104,240,.14)
+  }
+  #filter{flex:1 1 220px;min-width:170px}
+  button,.btn-link{
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    border-radius:8px;padding:8px 14px;border:1px solid transparent;transition:.15s;
+    text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent2)}
+  .btn-ghost{background:var(--panel2);color:var(--ink2);border-color:var(--line2)}
+  .btn-ghost:hover{background:var(--accentbg);color:var(--accent);border-color:#c9c2f8}
+  .btn-sm{padding:4px 10px;font-size:12px;font-weight:500}
+  .grow{flex:1}
+
+  .chip{
+    display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink3);
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel2);
+    cursor:pointer;white-space:nowrap;
+  }
+  .chip:hover{border-color:#c9c2f8;color:var(--accent)}
+  .chip b{font-family:var(--mono);font-size:11.5px;color:var(--ink2);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+  .dot.live{background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.18)}
+  .dot.warn{background:#e59e24;box-shadow:0 0 0 3px rgba(229,158,36,.18)}
+  .dot.pause{background:#b0b6cc}
+
+  /* ---------- 列表 ---------- */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:560px;table-layout:auto}
+  thead th{
+    text-align:left;font-size:11.5px;font-weight:700;color:var(--ink3);
+    letter-spacing:.6px;text-transform:uppercase;
+    padding:11px 14px;background:var(--panel2);border-bottom:1px solid var(--line);
+    cursor:pointer;user-select:none;white-space:nowrap;
+  }
+  thead th:hover{color:var(--accent)}
+  thead th.sorted{color:var(--accent)}
+  tbody tr.row{border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  tbody tr.row:hover{background:#faf9ff}
+  tbody tr.row.open{background:var(--accentbg)}
+  tbody tr.row.offline{background:#fffdfdfb}
+  td{padding:11px 14px;vertical-align:middle}
+  .name{font-weight:600;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .name-addr{display:none;font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .addr{font-family:var(--mono);font-size:12.5px;color:var(--ink2);white-space:nowrap}
+  .map{font-family:var(--mono);font-size:12.5px;color:var(--ink2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .num{font-family:var(--mono);font-size:13px}
+  .muted{color:var(--ink3)}
+  .pill{
+    display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;
+    font-weight:600;letter-spacing:.2px;
+  }
+  .pill-ok{background:var(--okbg);color:var(--ok)}
+  .pill-bad{background:var(--badbg);color:var(--bad)}
+  .pill-wait{background:var(--warnbg);color:var(--warn)}
+  .pill-mode{background:var(--accentbg);color:var(--accent);font-family:var(--mono);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
+  .bar-wrap{display:flex;align-items:center;gap:7px}
+  .meter{width:52px;height:5px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+  .meter i{display:block;height:100%;border-radius:3px;background:var(--accent2)}
+  .lat{font-family:var(--mono);font-size:12.5px;width:54px;text-align:right;display:inline-block}
+  .lat.good{color:var(--ok)} .lat.mid{color:var(--warn)} .lat.bad{color:var(--bad)}
+  .actions{white-space:nowrap;text-align:right}
+  .actions a,.actions button{opacity:.75;transition:.15s}
+  tr:hover .actions a,tr:hover .actions button{opacity:1}
+
+  /* ---------- 回合列 ---------- */
+  .round-cell{display:flex;flex-direction:column;gap:1px;line-height:1.3}
+  .round-time{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:.3px}
+  .round-time.muted{color:var(--ink3);font-weight:400}
+  .round-time.cd-done{color:var(--warn)}
+  .round-time.expired{color:var(--warn)}
+  .round-meta{font-size:11px;color:var(--ink3);white-space:nowrap;display:flex;align-items:center;gap:5px}
+  .pill-phase{background:#eef0fb;color:#4b5390;font-size:10.5px;padding:1px 6px;border-radius:9px;font-weight:600}
+
+  /* ---------- 详情 ---------- */
+  tr.detail>td{background:var(--panel2);padding:0;border-bottom:1px solid var(--line)}
+  .detail-inner{padding:16px 18px;display:grid;grid-template-columns:1.15fr 1fr;gap:20px}
+  @media(max-width:900px){.detail-inner{grid-template-columns:1fr}}
+  .dsec h4{
+    margin:0 0 9px;font-size:12px;color:var(--ink3);font-weight:700;
+    letter-spacing:.7px;text-transform:uppercase;display:flex;align-items:center;gap:8px;
+  }
+  .dsec h4 .cnt{background:var(--accentbg);color:var(--accent);border-radius:10px;padding:0 7px;font-size:11px}
+  .rule-filter{margin-left:auto;padding:3px 8px;font-size:12px;width:150px;font-family:var(--mono)}
+  .players{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .prow{display:grid;grid-template-columns:26px 1fr 48px 56px;gap:8px;padding:6px 10px;font-size:12.5px;border-bottom:1px solid #f2f3f9}
+  .prow:last-child{border-bottom:none}
+  .prow .idx{color:var(--ink3);font-family:var(--mono);text-align:right}
+  .prow .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .pscore,.prow .ptime{font-family:var(--mono);text-align:right;color:var(--ink2)}
+  .phead,.rhead{
+    position:sticky;top:0;z-index:1;background:var(--panel2);
+    font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--ink3);
+    text-transform:uppercase;border-bottom:1px solid var(--line);
+  }
+  .phead{display:grid;grid-template-columns:26px 1fr 48px 56px;gap:8px;padding:5px 10px}
+  .rhead{display:grid;grid-template-columns:165px 1fr;gap:10px;padding:5px 10px}
+  .phead .r,.rhead .r{text-align:right}
+  .rules{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .rrow{display:grid;grid-template-columns:165px 1fr;gap:10px;padding:5px 10px;font-size:12px;border-bottom:1px solid #f2f3f9}
+  .rrow:last-child{border-bottom:none}
+  .rk{font-family:var(--mono);color:var(--ink3);overflow:hidden;text-overflow:ellipsis}
+  .rv{font-family:var(--mono);color:var(--ink2);word-break:break-all}
+  .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 18px;margin-top:12px;font-size:12.5px}
+  .kv div span{color:var(--ink3);display:block;font-size:11px}
+  .kv div b{font-weight:600;font-family:var(--mono);font-size:12.5px}
+  .dsec .round-box{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 16px;
+    border:1px solid var(--line);border-radius:8px;padding:11px 13px;background:#fff;
+  }
+  .round-box div span{color:var(--ink3);font-size:11px;display:block}
+  .round-box div b{font-family:var(--mono);font-size:14px;font-weight:600}
+  .round-box div b.big{font-size:16px;color:var(--accent)}
+  .round-box div b.big.muted{color:var(--ink3);font-weight:500}
+  .round-box div b.big.expired{color:var(--warn)}
+
+  /* ---------- 空态 / 弹窗 / toast ---------- */
+  .empty{padding:52px 20px;text-align:center;color:var(--ink3)}
+  .empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:6px}
+  .notice{
+    margin-top:14px;padding:11px 14px;border-radius:10px;background:var(--panel);
+    border:1px solid var(--line);font-size:12.5px;color:var(--ink2);
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+  .notice code{background:var(--accentbg);color:var(--accent);padding:1px 6px;border-radius:5px;font-family:var(--mono);font-size:12px}
+  dialog{
+    border:none;border-radius:14px;padding:0;box-shadow:0 20px 60px rgba(20,16,50,.2);
+    max-width:540px;width:92%;color:var(--ink);
+  }
+  dialog::backdrop{background:rgba(24,20,48,.32)}
+  .dlg-h{padding:18px 20px 0;font-size:15px;font-weight:700}
+  .dlg-b{padding:12px 20px;font-size:13.5px;color:var(--ink2)}
+  .dlg-b p{margin:8px 0}
+  .dlg-b input{width:100%;margin-top:6px;font-family:var(--mono)}
+  .dlg-f{padding:0 20px 18px;display:flex;gap:9px;justify-content:flex-end}
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
+    background:#251f4a;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.22s;box-shadow:0 8px 24px rgba(20,16,50,.28);z-index:99;
+  }
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- 响应式 ---------- */
+  @media(max-width:1240px){
+    .col-addr{display:none}
+    .name-addr{display:block}
+    .name{max-width:260px}
+  }
+  @media(max-width:1080px){
+    .col-map,.col-copy{display:none}
+  }
+  @media(max-width:920px){
+    .col-mode{display:none}
+    .name{max-width:230px}
+  }
+  @media(max-width:780px){
+    .col-lat{display:none}
+  }
+  @media(max-width:660px){
+    .col-round{display:table-cell}
+    .app{padding:16px 12px 50px}
+    .stats{width:100%;margin-left:0}
+    .stat{flex:1;min-width:0}
+    td,thead th{padding:9px 9px}
+    .actions a,.actions button{padding:3px 6px;font-size:11.5px}
+    .name{max-width:185px}
+    .meter{width:34px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/><path d="M11 8v6M8 11h6" stroke-width="1.6"/>
+        </svg>
+      </div>
+      <div>
+        <h1>NeoProbe <span class="badge-web">GitHub Pages</span></h1>
+        <div class="sub">Garry's Mod / Source 服务器状态 · A2S 定时快照 + 回合接口实时直连</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="s-online">0</b><span>在线</span></div>
+      <div class="stat"><b id="s-total">0</b><span>收录</span></div>
+      <div class="stat"><b id="s-players">0</b><span>总玩家</span></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <input id="filter" type="text" placeholder="过滤名称 / 地图 / 地址（按 / 聚焦）" autocomplete="off">
+    <div class="grow"></div>
+    <button class="chip" id="snap-chip" type="button" title="A2S 快照由 GitHub Actions 定时采集，点击重新加载">
+      <span class="dot pause" id="snap-dot"></span>
+      <span id="snap-text">快照加载中…</span>
+    </button>
+    <button class="chip" id="rounds-chip" type="button" title="点击配置自定义回合接口（status.php / rounds.php）">
+      <span class="dot pause" id="rounds-dot"></span>
+      <span id="rounds-text">回合直连中…</span>
+    </button>
+    <button class="btn-ghost" id="btn-rounds-toggle" title="暂停或恢复回合接口实时轮询">暂停回合</button>
+    <button class="btn-primary" id="btn-refresh" title="同时刷新静态快照和实时回合接口">立即刷新</button>
+    <button class="btn-ghost" id="btn-about" title="了解网页版的数据来源与本地版区别">说明</button>
+  </div>
+
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="name">服务器</th>
+            <th class="col-map" data-sort="map">地图</th>
+            <th class="col-round" data-sort="rounds">回合 / 剩余</th>
+            <th data-sort="players">人数</th>
+            <th class="col-lat" data-sort="rtt" title="GitHub Actions 采集节点测得的 UDP 延迟，非访客本地延迟">节点延迟</th>
+            <th class="col-mode" data-sort="mode">模式</th>
+            <th class="col-addr" data-sort="address">地址</th>
+            <th style="text-align:right">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden>
+        <b>暂无服务器数据</b>
+        <span>等待 GitHub Actions 生成 <code>data/state.json</code>，或点击右上角“立即刷新”重试。</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notice">
+    <span>网页版限制：浏览器无法直发 UDP（A2S）包，因此人数 / 地图 / 玩家列表 / 规则来自 GitHub Actions 定时快照（延迟为采集节点视角），测试服回合与倒计时由浏览器每 10 秒直连 <code>status.php</code> 实时更新。需要 15 秒本机延迟、自动挤服或本机 VIP 查询，请使用仓库内的桌面版 <code>NeoProbe.exe</code>。</span>
+  </div>
+
+</div>
+
+<dialog id="dlg-rounds">
+  <div class="dlg-h">配置回合接口地址</div>
+  <div class="dlg-b">
+    <p>默认每 10 秒直连社区 <code>status.php</code>（带 CORS 允许浏览器跨域直读）。若你架设了自己的 <code>rounds.php</code> 并开启了 CORS，可在此替换；留空恢复默认。</p>
+    <input id="rounds-url-input" type="url" placeholder="https://neomio.nigigasaki.live/status.php">
+  </div>
+  <div class="dlg-f">
+    <button class="btn-ghost" id="dlg-rounds-reset" type="button">恢复默认</button>
+    <button class="btn-ghost" id="dlg-rounds-cancel" type="button">取消</button>
+    <button class="btn-primary" id="dlg-rounds-save" type="button">保存并刷新</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-about">
+  <div class="dlg-h">关于 NeoProbe 网页版</div>
+  <div class="dlg-b">
+    <p><b>数据来源</b></p>
+    <p>1. <b>回合阶段 / 剩余局数 / 倒计时</b>：浏览器每 10 秒直接请求 <code>status.php</code>，按 <code>server_time - updated_at</code> 补偿后本地每秒走秒。目前仅收录 202.189.21.228 上的 3 台测试服与兑换服；6 台 mio 正式服未上报，显示「未上报」。</p>
+    <p>2. <b>服务器在线 / 人数 / 地图 / 玩家 / 规则</b>：由 GitHub Actions 定时运行 A2S UDP 查询并发布到静态 <code>data/state.json</code>（约每 5–15 分钟更新一轮）。</p>
+    <p>3. <b>一键进服</b>：调用 <code>steam://connect/ip:port</code> 拉起本机 Steam 连接 Garry's Mod。</p>
+    <p><b>桌面版独有功能</b>：本机实时 15s UDP A2S、本机真实 RTT、满员自动挤服、本机 Steam VIP 读取。可在仓库运行 <code>python -m neoprobe --serve</code> 或下载 <code>NeoProbe.exe</code>。</p>
+  </div>
+  <div class="dlg-f">
+    <button class="btn-primary" id="dlg-about-ok" type="button">知道了</button>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+const DEFAULT_ROUNDS_API = "https://neomio.nigigasaki.live/status.php";
+const ROUNDS_URL_KEY = "neoprobe.pages.roundsUrl";
+const FILTER_KEY = "neoprobe.pages.filter";
+
+const PHASE_MAP = {
+  idle: "空闲",
+  waiting: "等待玩家",
+  preparing: "准备阶段",
+  round: "回合中",
+  postround: "回合结束",
+  warhead_starting: "核弹启动中",
+  warhead: "核弹倒计时",
+  offline: "离线",
+  "": "-",
+};
+
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  snapshot: null,
+  servers: [],
+  liveRounds: new Map(),      // key -> normalized round status from live browser fetch
+  liveRoundsMeta: null,
+  roundsUrl: localStorage.getItem(ROUNDS_URL_KEY) || DEFAULT_ROUNDS_API,
+  roundsAuto: true,
+  backoffSec: 0,
+  nextRoundsAt: 0,
+  sortKey: "players",
+  sortDir: -1,
+  openKey: null,
+  ruleFilter: "",
+};
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("on"), 2600);
+}
+
+function fmtSec(sec) {
+  if (sec == null || !isFinite(sec) || sec < 0) return "—";
+  sec = Math.round(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h) return `${h}h${String(m).padStart(2, "0")}m`;
+  if (m) return `${m}m${String(s).padStart(2, "0")}s`;
+  return `${s}s`;
+}
+
+function fmtAgo(unixSec) {
+  if (!unixSec) return "未知";
+  const diff = Math.max(0, Math.round(Date.now() / 1000 - unixSec));
+  if (diff < 15) return "刚刚";
+  if (diff < 60) return `${diff} 秒前`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
+  if (diff < 86400) return `${(diff / 3600).toFixed(1)} 小时前`;
+  return `${Math.floor(diff / 86400)} 天前`;
+}
+
+function latClass(rtt) {
+  if (rtt == null) return "";
+  if (rtt < 60) return "good";
+  if (rtt < 150) return "mid";
+  return "bad";
+}
+
+function gamemode(s) {
+  const i = s.info || {};
+  const tags = (i.tags || "").split(/\s+/);
+  for (const t of tags) {
+    const m = /^(gm|gamemode):(.+)$/i.exec(t);
+    if (m) return m[2];
+  }
+  return i.folder || i.game || "—";
+}
+
+function normPhase(raw) {
+  const t = String(raw || "").trim();
+  if (!t) return "-";
+  return PHASE_MAP[t.toLowerCase()] || t;
+}
+
+function parseRoundsPayload(data) {
+  const now = Date.now() / 1000;
+  if (!data || typeof data !== "object") return { ok: false, error: "响应结构异常" };
+  if (data.error) {
+    return { ok: false, error: String(data.error), retry_after: Number(data.retry_after || 0) || 0 };
+  }
+  if (!Array.isArray(data.servers)) return { ok: false, error: "缺少 servers 字段" };
+
+  const serverTime = parseInt(data.server_time || 0, 10) || 0;
+  const map = new Map();
+  for (const item of data.servers) {
+    if (!item || typeof item !== "object") continue;
+    const ip = String(item.ip || "").trim();
+    const port = parseInt(item.port || 0, 10);
+    if (!ip || !port || port <= 0) continue;
+
+    const updatedAt = parseInt(item.updated_at || 0, 10) || 0;
+    const rawRl = item.rounds_left == null ? -1 : parseInt(item.rounds_left, 10);
+    let tl = item.round_time_left == null ? -1 : parseInt(item.round_time_left, 10);
+
+    if (Number.isFinite(tl) && tl >= 0 && updatedAt > 0 && serverTime > 0) {
+      const delta = serverTime - updatedAt;
+      if (delta > 0 && delta < 300) tl = Math.max(0, tl - delta);
+    }
+
+    const phase = normPhase(item.round_phase);
+    const roundsLeft = Number.isFinite(rawRl) && rawRl >= 0 ? rawRl : null;
+    const timeLeft = Number.isFinite(tl) && tl >= 0 ? tl : null;
+    const timer = timeLeft == null ? "none" : (timeLeft === 0 && phase === "回合中" ? "expired" : "countdown");
+    const key = `${ip}:${port}`.toLowerCase();
+
+    map.set(key, {
+      phase,
+      rounds_left: roundsLeft,
+      time_left: timeLeft,
+      timer,
+      synced_at: now,
+      updated_at: updatedAt,
+      stale: updatedAt > 0 && (now - updatedAt) > 120,
+      server_name: String(item.server_name || "").trim(),
+      live: true,
+    });
+  }
+  return { ok: true, map, fetched_at: now, count: map.size };
+}
+
+function roundFor(s) {
+  const key = String(s.address || "").toLowerCase();
+  return state.liveRounds.get(key) || s.rounds || null;
+}
+
+function roundCell(s) {
+  const r = roundFor(s);
+  const hasData = r && (r.rounds_left != null || r.time_left != null);
+  if (!hasData) {
+    const why = !r
+      ? "回合接口里没有这台服务器：status.php 目前只收录 202.189.21.228 上的 3 台测试服和兑换服，6 台 mio 正式服都没有上报"
+      : "该服未向接口上报回合进度：回合字段恒为 -1";
+    return `<td class="col-round" title="${esc(why)}"><div class="round-cell">
+      <div><span class="round-time muted">—</span></div>
+      <div class="round-meta"><span class="muted" style="font-size:11px">未上报</span></div>
+    </div></td>`;
+  }
+
+  const cd = r.timer === "expired"
+    ? `<span class="round-time expired" title="接口仍报“回合中”，但倒计时已归零：回合还在打，只是不知道还剩多久">计时归零</span>`
+    : r.time_left != null
+    ? `<span class="round-time" data-cd="${r.time_left}" data-ts="${r.synced_at}">${fmtSec(r.time_left)}</span>`
+    : `<span class="round-time muted">—</span>`;
+  const rounds = r.rounds_left != null ? `剩 ${r.rounds_left} 局` : "局数未知";
+  const stale = r.stale ? ` <span class="muted" title="数据超过 2 分钟未更新">·</span>` : "";
+  return `<td class="col-round"><div class="round-cell">
+    <div>${cd}</div>
+    <div class="round-meta"><span class="pill-phase">${esc(r.phase)}</span>${rounds}${stale}</div>
+  </div></td>`;
+}
+
+function sortVal(s, key) {
+  const i = s.info || {};
+  const r = roundFor(s);
+  switch (key) {
+    case "name": return (i.name || s.label || s.address).toLowerCase();
+    case "map": return (i.map || "").toLowerCase();
+    case "rounds": return r && r.rounds_left != null ? r.rounds_left : -1;
+    case "players": return i.players ?? -1;
+    case "rtt": return s.rtt_ms ?? 9e9;
+    case "mode": return gamemode(s).toLowerCase();
+    case "address": return s.address.toLowerCase();
+    default: return 0;
+  }
+}
+
+function visibleServers() {
+  const f = $("filter").value.trim().toLowerCase();
+  let list = state.servers.slice();
+  if (f) {
+    list = list.filter((s) => {
+      const i = s.info || {};
+      return (s.address + " " + (s.label || "") + " " + (i.name || "") + " " + (i.map || "") + " " + gamemode(s))
+        .toLowerCase().includes(f);
+    });
+  }
+  const k = state.sortKey, d = state.sortDir;
+  list.sort((a, b) => {
+    const va = sortVal(a, k), vb = sortVal(b, k);
+    if (va < vb) return -1 * d;
+    if (va > vb) return 1 * d;
+    return a.address.localeCompare(b.address);
+  });
+  return list;
+}
+
+function rowHtml(s) {
+  const i = s.info || {};
+  const key = s.address;
+  const online = s.state === "ok";
+  const players = i.players ?? 0;
+  const max = i.max_players ?? 0;
+  const pct = max > 0 ? Math.min(100, Math.round(players / max * 100)) : 0;
+  const rtt = s.rtt_ms;
+  const title = i.name || s.label || s.address;
+  const statusPill = online
+    ? `<span class="pill pill-ok">在线</span>`
+    : `<span class="pill pill-bad" title="${esc(s.error || "")}">离线</span>`;
+  const fullHint = online && max > 0 && players >= max
+    ? ` <span class="pill pill-wait">满员</span>`
+    : "";
+
+  return `<tr class="row ${online ? "" : "offline"} ${state.openKey === key ? "open" : ""}" data-key="${esc(key)}">
+    <td>
+      <div class="name" title="${esc(title)}">${esc(title)}</div>
+      <div class="name-addr">${esc(s.address)}</div>
+      <div style="margin-top:3px">${statusPill}${fullHint}${online && i.vac === 1 ? ' <span class="pill pill-ok" style="background:#eef2ff;color:#4457c8">VAC</span>' : ""}</div>
+    </td>
+    <td class="map col-map" title="${esc(i.map || "")}">${esc(i.map || "—")}</td>
+    ${roundCell(s)}
+    <td>
+      <div class="bar-wrap">
+        <span class="num">${online ? `${players}<span class="muted">/${max}</span>` : "—"}</span>
+        <span class="meter"><i style="width:${pct}%"></i></span>
+      </div>
+    </td>
+    <td class="col-lat" title="采集节点到服务器的延迟"><span class="lat ${latClass(rtt)}">${rtt != null ? Math.round(rtt) + " ms" : "—"}</span></td>
+    <td class="col-mode"><span class="pill pill-mode" title="${esc(gamemode(s))}">${esc(gamemode(s))}</span></td>
+    <td class="addr col-addr">${esc(s.address)}</td>
+    <td class="actions">
+      <a class="btn-ghost btn-sm" href="steam://connect/${esc(key)}" data-act="join" data-key="${esc(key)}" title="通过 Steam 协议直连该服务器">进服</a>
+      <button class="btn-ghost btn-sm col-copy" type="button" data-act="copy" data-key="${esc(key)}" title="复制服务器地址">复制</button>
+    </td>
+  </tr>`;
+}
+
+function detailHtml(s) {
+  const i = s.info || {};
+  const players = Array.isArray(s.players) ? s.players : [];
+  const rules = s.rules && typeof s.rules === "object" ? s.rules : {};
+  const rf = state.ruleFilter.trim().toLowerCase();
+
+  const pHead = `<div class="phead"><div class="r">#</div><div>玩家</div><div class="r">分数</div><div class="r">时长</div></div>`;
+  const pRows = players.length
+    ? players.map((p) => `<div class="prow">
+        <div class="idx">${p.index}</div>
+        <div class="pname" title="${esc(p.name)}">${esc(p.name || "(无名)")}</div>
+        <div class="pscore">${p.score}</div>
+        <div class="ptime">${fmtDur(p.duration)}</div>
+      </div>`).join("")
+    : `<div class="prow" style="grid-template-columns:1fr"><div class="pname muted">${
+        s.players_error ? esc(s.players_error) : "没有玩家或快照未取到玩家列表"}</div></div>`;
+
+  const allRuleKeys = Object.keys(rules).sort();
+  const ruleKeys = rf ? allRuleKeys.filter((k) => k.toLowerCase().includes(rf) || String(rules[k]).toLowerCase().includes(rf)) : allRuleKeys;
+  const rHead = `<div class="rhead"><div>规则名</div><div>值</div></div>`;
+  const rRows = ruleKeys.length
+    ? ruleKeys.map((k) => `<div class="rrow"><div class="rk" title="${esc(k)}">${esc(k)}</div><div class="rv">${esc(rules[k])}</div></div>`).join("")
+    : `<div class="rrow" style="grid-template-columns:1fr"><div class="rv muted">${
+        allRuleKeys.length ? "没有匹配的规则" : (s.rules_error ? esc(s.rules_error) : "快照未取到规则")}</div></div>`;
+
+  const kv = [
+    ["地图", i.map], ["模式", gamemode(s)], ["版本", i.version],
+    ["AppID", i.app_id], ["机器人", i.bots],
+    ["可见性", i.visibility === 1 ? "私有" : (i.visibility === 0 ? "公开" : null)],
+    ["标签", i.tags],
+    ["快照采集", s.checked_at ? new Date(s.checked_at * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—"],
+    ["进服命令", `connect ${s.address}`],
+  ].filter(([, v]) => v !== undefined && v !== null && v !== "");
+
+  const r = roundFor(s);
+  const hasRound = r && (r.rounds_left != null || r.time_left != null);
+  let roundBlock;
+  if (hasRound) {
+    const upd = r.updated_at ? new Date(r.updated_at * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—";
+    const cdHtml = r.timer === "expired"
+      ? `<b class="big expired">计时归零</b>`
+      : r.time_left != null
+      ? `<b class="big" data-cd="${r.time_left}" data-ts="${r.synced_at}">${fmtSec(r.time_left)}</b>`
+      : `<b class="big muted">—</b>`;
+    const PHASE_NOTE = {
+      "回合中": r.timer === "expired"
+        ? "倒计时已提前归零，但回合仍在进行（实测可持续数分钟）。结束后进入 30 秒“回合结束”。"
+        : "倒计时从单局时长（br_time_round）往下走；可能因一方获胜提前结束。",
+      "回合结束": "结算阶段，倒计时约 30 秒（br_time_postround），之后进入准备阶段。",
+      "准备阶段": "下一局即将开始；剩余局数在这个阶段减 1。",
+    };
+    const note = PHASE_NOTE[r.phase];
+    const srcText = r.live ? "浏览器直连 status.php（实时）" : "随快照附带的 status.php（兜底）";
+    roundBlock = `<div class="round-box">
+      <div><span>回合阶段</span><b>${esc(r.phase || "—")}</b></div>
+      <div><span>剩余时间</span>${cdHtml}</div>
+      <div><span>剩余局数</span><b>${r.rounds_left != null ? r.rounds_left + " 局" : "—"}</b></div>
+      <div><span>数据时间</span><b>${upd}${r.stale ? " （偏旧）" : ""}</b></div>
+      <div style="grid-column:1/-1"><span>说明</span>
+        <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">${note ? note + " " : ""}来源：${srcText}。</b></div>
+    </div>`;
+  } else {
+    const RMAP = [
+      ["br_time_round", "单局时长", "s"], ["ttt_roundtime_minutes", "单局时长", "m"],
+      ["br_time_preparing", "准备阶段", "s"], ["ttt_preptime_seconds", "准备阶段", "s"],
+      ["br_time_postround", "回合结束", "s"], ["ttt_posttime_seconds", "回合结束", "s"],
+      ["ttt_round_limit", "总局数上限", ""], ["br_roundrestart", "回合重启", ""],
+    ];
+    const extra = [];
+    const seenLabel = new Set();
+    for (const [k, label, unit] of RMAP) {
+      if (seenLabel.has(label)) continue;
+      const v = rules[k];
+      if (v === undefined || v === "" || v === "0") continue;
+      seenLabel.add(label);
+      let text = v;
+      const num = parseFloat(v);
+      if (unit === "s" && isFinite(num)) text = fmtSec(num) + "（" + v + "s）";
+      else if (unit === "m" && isFinite(num)) text = num + " 分钟";
+      extra.push(`<div><span>${label}</span><b>${esc(text)}</b></div>`);
+    }
+    const why = r
+      ? "该服在接口中回合字段恒为 -1，无法获取当前回合数与倒计时。"
+      : "status.php 目前只收录 202.189.21.228 上的测试服与兑换服，6 台 mio 正式服未上报回合进度。";
+    roundBlock = `<div class="round-box">
+      ${extra.slice(0, 4).join("") || `<div><span>回合数据</span><b class="muted">未上报</b></div>`}
+      <div style="grid-column:1/-1"><span>说明</span>
+        <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">${why}${extra.length ? " 以上为服务器 A2S_RULES 中的静态回合配置。" : ""}</b></div>
+    </div>`;
+  }
+
+  return `<tr class="detail"><td colspan="8">
+    <div class="detail-inner">
+      <div>
+        <div class="dsec" style="margin-bottom:14px">
+          <h4>对局状态</h4>
+          ${roundBlock}
+        </div>
+        <div class="dsec">
+          <h4>玩家列表 <span class="cnt">${players.length}</span></h4>
+          <div class="players">${pHead}${pRows}</div>
+        </div>
+      </div>
+      <div>
+        <div class="dsec">
+          <h4>服务器规则 <span class="cnt">${ruleKeys.length}/${allRuleKeys.length}</span>
+            <input class="rule-filter" type="text" placeholder="过滤规则…" value="${esc(state.ruleFilter)}" data-role="rule-filter">
+          </h4>
+          <div class="rules">${rHead}${rRows}</div>
+          <div class="kv">${kv.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn-primary btn-sm btn-link" href="steam://connect/${esc(s.address)}">Steam 直连进服</a>
+            <button class="btn-ghost btn-sm" type="button" data-act="copy-cmd" data-key="${esc(s.address)}">复制 connect 命令</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </td></tr>`;
+}
+
+function saveScrolls() {
+  const res = {};
+  const p = document.querySelector(".players");
+  const r = document.querySelector(".rules");
+  if (p) res.p = p.scrollTop;
+  if (r) res.r = r.scrollTop;
+  const rf = document.querySelector("[data-role='rule-filter']");
+  if (rf && document.activeElement === rf) res.rfPos = [rf.selectionStart, rf.selectionEnd];
+  return res;
+}
+
+function restoreScrolls(s) {
+  const p = document.querySelector(".players");
+  const r = document.querySelector(".rules");
+  if (p && s.p != null) p.scrollTop = s.p;
+  if (r && s.r != null) r.scrollTop = s.r;
+  const rf = document.querySelector("[data-role='rule-filter']");
+  if (rf && s.rfPos) {
+    rf.focus();
+    try { rf.setSelectionRange(s.rfPos[0], s.rfPos[1]); } catch (e) { /* ignore */ }
+  }
+}
+
+function render() {
+  const scrolls = saveScrolls();
+  const list = visibleServers();
+  $("empty").hidden = state.servers.length > 0;
+  $("tbody").innerHTML = list.map((x) => rowHtml(x) + (state.openKey === x.address ? detailHtml(x) : "")).join("");
+  restoreScrolls(scrolls);
+  tickCountdowns();
+
+  document.querySelectorAll("thead th[data-sort]").forEach((th) => {
+    th.classList.toggle("sorted", th.dataset.sort === state.sortKey);
+    th.textContent = th.textContent.replace(/[ ▲▼]+$/, "") +
+      (th.dataset.sort === state.sortKey ? (state.sortDir > 0 ? " ▲" : " ▼") : "");
+  });
+}
+
+function updateStats() {
+  const on = state.servers.filter((s) => s.state === "ok");
+  $("s-online").textContent = on.length;
+  $("s-total").textContent = state.servers.length;
+  $("s-players").textContent = on.reduce((a, s) => a + ((s.info && s.info.players) || 0), 0);
+}
+
+function renderChips() {
+  const snapDot = $("snap-dot");
+  const snapText = $("snap-text");
+  if (state.snapshot && state.snapshot.generated_at) {
+    const age = Date.now() / 1000 - state.snapshot.generated_at;
+    snapDot.className = age < 900 ? "dot live" : "dot warn";
+    const who = state.snapshot.collector === "github-actions" ? "Actions" : "快照";
+    snapText.textContent = `${who} · ${fmtAgo(state.snapshot.generated_at)}`;
+  } else {
+    snapDot.className = "dot warn";
+    snapText.textContent = "快照未加载";
+  }
+
+  const rDot = $("rounds-dot");
+  const rText = $("rounds-text");
+  const m = state.liveRoundsMeta;
+  if (!state.roundsAuto) {
+    rDot.className = "dot pause";
+    rText.textContent = "回合轮询已暂停";
+  } else if (m && m.ok) {
+    rDot.className = "dot live";
+    rText.textContent = `回合直连 · ${m.count} 台`;
+  } else if (m && m.error) {
+    rDot.className = "dot warn";
+    rText.textContent = `回合退避（${m.error}）`;
+  } else {
+    rDot.className = "dot pause";
+    rText.textContent = "回合直连中…";
+  }
+}
+
+function tickCountdowns() {
+  const now = Date.now() / 1000;
+  document.querySelectorAll("[data-cd]").forEach((el) => {
+    const base = parseFloat(el.dataset.cd);
+    const ts = parseFloat(el.dataset.ts);
+    if (!isFinite(base) || !isFinite(ts)) return;
+    const left = Math.max(0, Math.round(base - (now - ts)));
+    const text = fmtSec(left);
+    if (el.textContent !== text) el.textContent = text;
+    el.classList.toggle("cd-done", left <= 0);
+  });
+  if (state.snapshot && state.snapshot.generated_at) {
+    const who = state.snapshot.collector === "github-actions" ? "Actions" : "快照";
+    $("snap-text").textContent = `${who} · ${fmtAgo(state.snapshot.generated_at)}`;
+  }
+}
+
+async function fetchSnapshot(showToast) {
+  try {
+    const resp = await fetch(`./data/state.json?_=${Date.now()}`, { cache: "no-store" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    state.snapshot = data;
+    state.servers = Array.isArray(data.servers) ? data.servers : [];
+    updateStats();
+    renderChips();
+    render();
+    if (showToast) toast(`快照已更新（${fmtAgo(data.generated_at)}）`);
+  } catch (err) {
+    renderChips();
+    if (showToast) toast(`快照加载失败：${err.message || err}`);
+  }
+}
+
+async function fetchLiveRounds(force) {
+  const nowMs = Date.now();
+  if (!force && nowMs < state.nextRoundsAt) return;
+  const sep = state.roundsUrl.includes("?") ? "&" : "?";
+  const url = `${state.roundsUrl}${sep}_=${nowMs}`;
+  try {
+    const resp = await fetch(url, { cache: "no-store" });
+    if (resp.status === 429) {
+      let retryAfter = 0;
+      try {
+        const j = await resp.json();
+        retryAfter = Number(j.retry_after || 0) || 0;
+      } catch (e) { /* ignore */ }
+      state.backoffSec = Math.min(60, Math.max(retryAfter, state.backoffSec ? state.backoffSec * 2 : 5));
+      state.nextRoundsAt = Date.now() + state.backoffSec * 1000;
+      state.liveRoundsMeta = { ok: false, error: "429 限流" };
+      renderChips();
+      return;
+    }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const parsed = parseRoundsPayload(data);
+    if (!parsed.ok) {
+      state.backoffSec = Math.min(60, Math.max(parsed.retry_after || 0, state.backoffSec ? state.backoffSec * 2 : 5));
+      state.nextRoundsAt = Date.now() + state.backoffSec * 1000;
+      state.liveRoundsMeta = { ok: false, error: parsed.error };
+      renderChips();
+      return;
+    }
+    state.backoffSec = 0;
+    state.nextRoundsAt = Date.now() + 10000;
+    state.liveRounds = parsed.map;
+    state.liveRoundsMeta = { ok: true, fetched_at: parsed.fetched_at, count: parsed.count };
+    renderChips();
+    render();
+  } catch (err) {
+    state.backoffSec = Math.min(60, state.backoffSec ? state.backoffSec * 2 : 5);
+    state.nextRoundsAt = Date.now() + state.backoffSec * 1000;
+    state.liveRoundsMeta = { ok: false, error: "网络受限，用快照兜底" };
+    renderChips();
+  }
+}
+
+/* ---------------- 交互 ---------------- */
+
+const savedFilter = localStorage.getItem(FILTER_KEY);
+if (savedFilter) $("filter").value = savedFilter;
+$("filter").oninput = () => {
+  localStorage.setItem(FILTER_KEY, $("filter").value);
+  render();
+};
+
+document.querySelectorAll("thead th[data-sort]").forEach((th) => {
+  th.onclick = () => {
+    const k = th.dataset.sort;
+    if (state.sortKey === k) state.sortDir *= -1;
+    else { state.sortKey = k; state.sortDir = 1; }
+    render();
+  };
+});
+
+$("tbody").addEventListener("input", (e) => {
+  if (e.target && e.target.dataset.role === "rule-filter") {
+    state.ruleFilter = e.target.value;
+    render();
+  }
+});
+
+$("tbody").addEventListener("click", async (e) => {
+  if (e.target && e.target.dataset.role === "rule-filter") {
+    e.stopPropagation();
+    return;
+  }
+  const actEl = e.target.closest("[data-act]");
+  if (actEl) {
+    e.stopPropagation();
+    const act = actEl.dataset.act;
+    const key = actEl.dataset.key;
+    if (act === "copy") {
+      try { await navigator.clipboard.writeText(key); toast("已复制 " + key); }
+      catch { toast("复制失败，请手动选择"); }
+    } else if (act === "copy-cmd") {
+      const cmd = `connect ${key}`;
+      try { await navigator.clipboard.writeText(cmd); toast("已复制 " + cmd); }
+      catch { toast("复制失败，请手动选择"); }
+    } else if (act === "join") {
+      toast("正在通过 Steam 连接 " + key);
+    }
+    return;
+  }
+  const row = e.target.closest("tr.row");
+  if (!row) return;
+  const key = row.dataset.key;
+  if (state.openKey === key) { state.openKey = null; render(); return; }
+  state.openKey = key;
+  state.ruleFilter = "";
+  render();
+});
+
+$("snap-chip").onclick = () => fetchSnapshot(true);
+$("btn-refresh").onclick = async () => {
+  await Promise.all([fetchSnapshot(false), fetchLiveRounds(true)]);
+  toast("已刷新快照与回合数据");
+};
+
+$("btn-rounds-toggle").onclick = () => {
+  state.roundsAuto = !state.roundsAuto;
+  $("btn-rounds-toggle").textContent = state.roundsAuto ? "暂停回合" : "恢复回合";
+  renderChips();
+  if (state.roundsAuto) fetchLiveRounds(true);
+};
+
+$("rounds-chip").onclick = () => {
+  $("rounds-url-input").value = state.roundsUrl;
+  $("dlg-rounds").showModal();
+};
+$("dlg-rounds-cancel").onclick = () => $("dlg-rounds").close();
+$("dlg-rounds-reset").onclick = () => { $("rounds-url-input").value = DEFAULT_ROUNDS_API; };
+$("dlg-rounds-save").onclick = () => {
+  const v = $("rounds-url-input").value.trim() || DEFAULT_ROUNDS_API;
+  state.roundsUrl = v;
+  localStorage.setItem(ROUNDS_URL_KEY, v);
+  state.backoffSec = 0;
+  state.nextRoundsAt = 0;
+  $("dlg-rounds").close();
+  fetchLiveRounds(true);
+  toast("已更新回合接口地址");
+};
+
+$("btn-about").onclick = () => $("dlg-about").showModal();
+$("dlg-about-ok").onclick = () => $("dlg-about").close();
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.openKey) { state.openKey = null; render(); }
+  if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    $("filter").focus();
+  }
+});
+
+(function initOpenFromHash() {
+  const m = /(?:^|#|&)open=([^&]+)/.exec(location.hash || "");
+  if (m) { try { state.openKey = decodeURIComponent(m[1]); } catch (e) { /* ignore */ } }
+})();
+
+// 启动加载：先读静态快照，再立即直连一次 status.php
+fetchSnapshot(false);
+fetchLiveRounds(true);
+setInterval(() => { if (!document.hidden && state.roundsAuto) fetchLiveRounds(false); }, 2000);
+setInterval(() => { if (!document.hidden) fetchSnapshot(false); }, 60000);
+setInterval(tickCountdowns, 1000);
+</script>
+</body>
+</html>

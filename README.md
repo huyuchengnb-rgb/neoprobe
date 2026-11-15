@@ -318,7 +318,7 @@ python -m unittest discover -s tests -v
 覆盖：地址解析（IPv4/域名/IPv6/steam://）、challenge 握手、分包重组、压缩分包、
 玩家、规则、超时、端口关闭、gamemode 推断、回合解析与时间补偿、限流响应、服务器目录同步、
 客户端状态读取、换图与空位观测、启动命令构造、GMod 路径归一（目录 / exe / bin\win64 三种写法）、
-挤服状态机、VIP 字段兼容与日期解析。共 88 个用例。
+挤服状态机、VIP 字段兼容与日期解析、GitHub Pages 静态快照构建。共 91 个用例。
 
 不想连真服时，还有个假接口可以喂数据：
 
@@ -359,6 +359,34 @@ python tools/scan_ports.py --ports 27000-27900,31000-32000 --timeout 1.6 202.189
 ```
 
 满载的服务器会丢 A2S 包（实测单次约 20% 超时），所以查询带 3 次短重试（`--retries`）。
+
+## GitHub Pages 网页版（公网访问）
+
+仓库内置了静态网页版（[`docs/index.html`](docs/index.html)）和采集工作流（[`.github/workflows/pages.yml`](.github/workflows/pages.yml)）：
+
+- **A2S 服务器状态**：浏览器无法直接发送 UDP 包，由 GitHub Actions 每 5 分钟运行 `python tools/build_pages.py --out _site` 采集所有服务器的 `INFO / PLAYER / RULES` 并部署到 `data/state.json`（不向 `main` 分支刷自动提交）。
+- **回合 / 倒计时**：`status.php` 返回 `Access-Control-Allow-Origin: *`，网页每 10 秒由访客浏览器直连拉取，并在本地每秒走秒。
+- **一键进服**：点击「进服」通过 `steam://connect/<ip>:<port>` 直接拉起 Steam 连服。
+- **与桌面版的区别**：本机真实延迟、15 秒实时 A2S、满员自动挤服与本机 Steam VIP 查询仍需运行桌面版 `NeoProbe.exe` / `python -m neoprobe --serve`。
+
+### 挂载步骤
+
+1. 在 GitHub 新建仓库并推送本仓库的 `main` 分支：
+   ```bash
+   git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+   git push -u origin main
+   ```
+2. 打开仓库的 **Settings → Pages → Build and deployment → Source**，选择 **GitHub Actions**。
+3. 到 **Actions → Deploy NeoProbe Pages** 点一次 **Run workflow**（或等待自动触发），完成后即可通过 `https://<你的用户名>.github.io/<仓库名>/` 公开访问。
+
+本地预览网页版：
+
+```bash
+python tools/build_pages.py --out docs --skip-copy
+python -m http.server -d docs 8080
+```
+
+---
 
 ## 导出 / 分发
 
@@ -407,6 +435,7 @@ neoprobe/
 tools/
   entry.py      exe 入口（双击无参数 = 起面板）
   release.py    一条命令出成品：exe + pyz + 说明 + zip
+  build_pages.py  生成 GitHub Pages 静态站点与 A2S 快照（data/state.json）
   make_icon.py  画应用图标（输出多尺寸 .ico）
   version_info.txt  exe 属性里的版本信息
   scan_ports.py 端口扫描（确认服务器有没有漏加）
@@ -415,6 +444,11 @@ tools/
   roundwatch.py / groundtruth.py / gt_analyze.py  回合边界观测脚本
   gmod/         可选客户端探针与服务端上报 Lua 脚本
   server/       配套 PHP 回合接收端（rounds.php）
+docs/
+  index.html    GitHub Pages 静态网页版（直连 status.php + 消费 A2S 快照）
+  data/state.json  初始快照（Actions 运行时自动生成最新 _site/data/state.json）
+.github/workflows/
+  pages.yml     每 5 分钟定时采集并部署 GitHub Pages
 assets/
   neoprobe.ico  应用图标（256/128/64/48/32/16 六种尺寸）
   neoprobe.png  PNG 图标
@@ -426,6 +460,7 @@ tests/
   test_catalog.py      7 个用例
   test_clientstate.py  10 个用例
   test_mapinfo.py      4 个用例
+  test_pages.py        3 个用例
   test_rounds_launch.py 20 个用例
   test_queue.py        9 个用例（等待/抢位/取消/预留位/探测失败）
   test_slots.py        8 个用例
