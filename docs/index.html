@@ -247,6 +247,38 @@
   }
   #goc-frame{display:block;width:100%;height:670px;border:0;background:#101f37}
 
+  /* ---------- RX 美化资源站 ---------- */
+  .rx-crumbs{
+    display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1 1 260px;min-width:180px;
+    font-size:13px;
+  }
+  .rx-crumb{
+    background:var(--panel2);color:var(--ink2);border:1px solid var(--line);
+    border-radius:7px;padding:4px 9px;font-size:12.5px;font-weight:600;
+  }
+  .rx-crumb:hover{border-color:#c9c2f8;color:var(--accent)}
+  .rx-crumb.cur{background:var(--accentbg);color:var(--accent);border-color:#c9c2f8}
+  .rx-sep{color:var(--ink3);font-size:12px;padding:0 1px}
+  #rx-search{flex:1 1 220px;min-width:160px}
+  .rx-name{display:flex;align-items:center;gap:8px;font-weight:500}
+  .rx-name.dir{font-weight:600;color:var(--ink)}
+  .rx-parent{font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .rx-icon{font-size:15px;line-height:1;flex:none}
+  .rx-meta{font-family:var(--mono);font-size:12.5px;color:var(--ink2);white-space:nowrap}
+  .rx-readme{
+    margin-top:14px;padding:14px 16px;border-radius:10px;background:var(--panel);
+    border:1px solid var(--line);font-size:13px;line-height:1.7;color:var(--ink2);
+    word-break:break-word;
+  }
+  .rx-readme b{display:block;color:var(--ink);margin-bottom:4px;font-size:13.5px}
+  .rx-readme a{color:var(--accent);text-decoration:none}
+  .rx-readme a:hover{text-decoration:underline}
+  .rx-more{padding:12px;text-align:center;border-top:1px solid var(--line);background:var(--panel2)}
+  .rx-embed-wrap{
+    border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel);
+  }
+  #rx-frame{display:block;width:100%;height:78vh;min-height:640px;border:0;background:#fff}
+
   /* ---------- 空态 / 弹窗 / toast ---------- */
   .empty{padding:52px 20px;text-align:center;color:var(--ink3)}
   .empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:6px}
@@ -328,6 +360,9 @@
     <button class="nav-tab" id="tab-goc" data-view="goc" role="tab" aria-selected="false" type="button" title="排队挤服或等局期间随时练习 GOC 奇术解密">
       ✧ GOC 奇术终端 <span class="tab-tag">训练模式</span>
     </button>
+    <button class="nav-tab" id="tab-rx" data-view="rx" role="tab" aria-selected="false" type="button" title="浏览与下载 RX 美化包与常用资源（rx.l1ght.xyz）">
+      RX 美化资源站 <span class="tab-tag">网盘</span>
+    </button>
   </div>
 
   <div class="queue-banner" id="queue-banner" hidden></div>
@@ -391,6 +426,55 @@
     </div>
     <div class="goc-wrap">
       <iframe id="goc-frame" title="GOC 奇术终端 · 训练模式" loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <section id="view-rx" hidden>
+    <div class="goc-bar">
+      <span><b>RX 美化资源站</b>（直连 <a href="https://rx.l1ght.xyz/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">rx.l1ght.xyz</a> · OpenList Powered by L1gHT <span id="rx-announce" class="muted"></span>）</span>
+      <div class="grow"></div>
+      <button class="btn-ghost btn-sm" id="btn-rx-mode" type="button" title="在清爽原生列表和原站 OpenList 页面间切换">切换原站视图</button>
+      <a class="btn-ghost btn-link btn-sm" href="https://rx.l1ght.xyz/" target="_blank" rel="noopener">新窗口打开</a>
+      <button class="btn-ghost btn-sm" id="btn-rx-back" type="button">返回服务器列表</button>
+    </div>
+
+    <div id="rx-native">
+      <div class="bar">
+        <div class="rx-crumbs" id="rx-crumbs"></div>
+        <input id="rx-search" type="text" placeholder="过滤当前目录，回车全站搜索（按 / 聚焦）" autocomplete="off">
+        <button class="btn-primary btn-sm" id="btn-rx-search" type="button">全站搜索</button>
+        <button class="btn-ghost btn-sm" id="btn-rx-clear" type="button" hidden>返回目录</button>
+        <button class="btn-ghost btn-sm" id="btn-rx-refresh" type="button">刷新</button>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th id="rx-th-name">名称</th>
+                <th style="width:110px">大小</th>
+                <th style="width:160px">修改时间</th>
+                <th style="width:155px;text-align:right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="rx-tbody"></tbody>
+          </table>
+          <div class="empty" id="rx-empty" hidden>
+            <b id="rx-empty-title">正在加载目录…</b>
+            <span id="rx-empty-sub">正在连接 rx.l1ght.xyz</span>
+          </div>
+          <div class="rx-more" id="rx-more" hidden>
+            <button class="btn-ghost btn-sm" id="btn-rx-more" type="button">加载更多文件</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rx-readme" id="rx-readme" hidden></div>
+    </div>
+
+    <div class="rx-embed-wrap" id="rx-embed" hidden>
+      <iframe id="rx-frame" title="RX 美化资源站（原站视图）" loading="lazy"></iframe>
     </div>
   </section>
 
@@ -1471,23 +1555,415 @@ $("dlg-rounds-save").onclick = () => {
 $("btn-about").onclick = () => $("dlg-about").showModal();
 $("dlg-about-ok").onclick = () => $("dlg-about").close();
 
+const RX_ORIGIN = "https://rx.l1ght.xyz";
+const rxState = {
+  inited: false,
+  mode: "native",
+  path: "/",
+  page: 1,
+  perPage: 200,
+  total: 0,
+  items: [],
+  readme: "",
+  searchMode: false,
+  searchQuery: "",
+  localFilter: "",
+  loading: false,
+  error: "",
+};
+
+function rxEncodePath(p) {
+  return String(p || "/").split("/").filter(Boolean).map(encodeURIComponent).join("/");
+}
+
+function rxJoinPath(dir, name) {
+  const base = dir === "/" ? "" : dir.replace(/\/+$/, "");
+  return base + "/" + String(name || "").replace(/^\/+/, "");
+}
+
+function rxNormParent(raw) {
+  const cleaned = String(raw || "/").replace(/^\/root(?:\/RX)?(?=\/|$)/, "").replace(/\/+/g, "/");
+  return cleaned.startsWith("/") ? (cleaned || "/") : "/" + cleaned;
+}
+
+function rxDirectUrl(fullPath, sign) {
+  const enc = rxEncodePath(fullPath);
+  return `${RX_ORIGIN}/d/${enc}${sign ? "?sign=" + encodeURIComponent(sign) : ""}`;
+}
+
+function rxFmtSize(bytes, isDir) {
+  if (isDir) return "—";
+  const n = Number(bytes);
+  if (!isFinite(n) || n < 0) return "—";
+  if (n < 1024) return `${n} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let v = n / 1024;
+  let u = 0;
+  while (v >= 1024 && u < units.length - 1) { v /= 1024; u++; }
+  return `${v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)} ${units[u]}`;
+}
+
+function rxFmtTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const p = (x) => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function rxIcon(item) {
+  if (item.is_dir) return "📁";
+  const ext = (String(item.name || "").split(".").pop() || "").toLowerCase();
+  if (["rar", "zip", "7z", "tar", "gz", "vpk"].includes(ext)) return "📦";
+  if (["mp3", "wav", "ogg", "flac", "aac"].includes(ext)) return "🎵";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "🖼️";
+  if (["mp4", "webm", "mkv", "mov"].includes(ext)) return "🎬";
+  if (["txt", "md", "pdf", "cfg", "lua", "json"].includes(ext)) return "📄";
+  return "📎";
+}
+
+function rxRenderReadme(raw) {
+  const box = $("rx-readme");
+  const text = String(raw || "").trim();
+  if (!text) { box.hidden = true; box.innerHTML = ""; return; }
+  const lines = text
+    .replace(/\r\n/g, "\n")
+    .split(/<br\s*\/?>|\n/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const htmlLines = lines.map((line) => {
+    const clean = line.replace(/#+/g, "").trim();
+    const parts = clean.split(/(https?:\/\/[^\s<>"']+)/g);
+    return parts.map((part, idx) => {
+      if (idx % 2 === 1) {
+        return `<a href="${esc(part)}" target="_blank" rel="noopener">${esc(part)}</a>`;
+      }
+      return esc(part);
+    }).join("");
+  });
+  box.innerHTML = `<b>目录说明（源自 rx.l1ght.xyz）</b>${htmlLines.join("<br>")}`;
+  box.hidden = false;
+}
+
+async function rxPost(endpoint, payload) {
+  const res = await fetch(`${RX_ORIGIN}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data || data.code !== 200) throw new Error((data && data.message) || "接口返回异常");
+  return data.data || {};
+}
+
+async function rxLoadSettings() {
+  try {
+    const res = await fetch(`${RX_ORIGIN}/api/public/settings`, { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const ann = String((data && data.data && data.data.announcement) || "")
+      .replace(/^#+\s*/, "").replace(/[\r\n]+/g, " ").trim();
+    if (ann) $("rx-announce").textContent = "· " + ann;
+  } catch (e) { /* ignore optional announcement */ }
+}
+
+async function rxLoadDir(path, page = 1, append = false, refresh = false) {
+  rxState.loading = true;
+  rxState.error = "";
+  rxState.searchMode = false;
+  if (!append) {
+    rxState.path = path || "/";
+    rxState.page = 1;
+    rxState.items = [];
+    rxState.readme = "";
+  }
+  $("btn-rx-clear").hidden = true;
+  rxRender();
+  try {
+    const data = await rxPost("/api/fs/list", {
+      path: rxState.path,
+      page,
+      per_page: rxState.perPage,
+      refresh,
+    });
+    const list = Array.isArray(data.content) ? data.content : [];
+    const mapped = list.map((x) => ({
+      name: x.name,
+      is_dir: !!x.is_dir,
+      size: x.size,
+      modified: x.modified,
+      sign: x.sign || "",
+      parentPath: rxState.path,
+      fullPath: rxJoinPath(rxState.path, x.name),
+    }));
+    rxState.items = append ? rxState.items.concat(mapped) : mapped;
+    rxState.total = Number(data.total || rxState.items.length) || 0;
+    rxState.page = page;
+    rxState.readme = data.readme || "";
+  } catch (err) {
+    rxState.error = err.message || String(err);
+  } finally {
+    rxState.loading = false;
+    rxRender();
+  }
+}
+
+async function rxGlobalSearch(keyword, page = 1, append = false) {
+  const kw = String(keyword || "").trim();
+  if (!kw) return rxLoadDir(rxState.path, 1, false);
+  rxState.loading = true;
+  rxState.error = "";
+  rxState.searchMode = true;
+  rxState.searchQuery = kw;
+  if (!append) {
+    rxState.page = 1;
+    rxState.items = [];
+  }
+  $("btn-rx-clear").hidden = false;
+  rxRender();
+  try {
+    const data = await rxPost("/api/fs/search", {
+      parent: "/",
+      keywords: kw,
+      scope: 0,
+      page,
+      per_page: rxState.perPage,
+    });
+    const list = Array.isArray(data.content) ? data.content : [];
+    const mapped = list.map((x) => {
+      const parentPath = rxNormParent(x.parent);
+      return {
+        name: x.name,
+        is_dir: !!x.is_dir,
+        size: x.size,
+        modified: x.modified || "",
+        sign: x.sign || "",
+        parentPath,
+        fullPath: rxJoinPath(parentPath, x.name),
+      };
+    });
+    rxState.items = append ? rxState.items.concat(mapped) : mapped;
+    rxState.total = Number(data.total || rxState.items.length) || 0;
+    rxState.page = page;
+  } catch (err) {
+    rxState.error = err.message || String(err);
+  } finally {
+    rxState.loading = false;
+    rxRender();
+  }
+}
+
+async function rxResolveFileUrl(fullPath, sign) {
+  try {
+    const info = await rxPost("/api/fs/get", { path: fullPath });
+    if (info.raw_url) return info.raw_url;
+    if (info.sign) return rxDirectUrl(fullPath, info.sign);
+  } catch (e) { /* fall back to direct /d/ path */ }
+  return sign ? rxDirectUrl(fullPath, sign) : `${RX_ORIGIN}/${rxEncodePath(fullPath)}`;
+}
+
+function rxRenderCrumbs() {
+  const wrap = $("rx-crumbs");
+  if (rxState.searchMode) {
+    wrap.innerHTML = `<button class="rx-crumb" type="button" data-rx-path="/">🏠 根目录</button>`
+      + `<span class="rx-sep">/</span>`
+      + `<span class="rx-crumb cur">全站搜索：${esc(rxState.searchQuery)}（${rxState.total}）</span>`;
+    return;
+  }
+  const parts = rxState.path.split("/").filter(Boolean);
+  let html = `<button class="rx-crumb${parts.length ? "" : " cur"}" type="button" data-rx-path="/">🏠 根目录</button>`;
+  let acc = "";
+  parts.forEach((p, idx) => {
+    acc += "/" + p;
+    const isLast = idx === parts.length - 1;
+    html += `<span class="rx-sep">/</span>`
+      + `<button class="rx-crumb${isLast ? " cur" : ""}" type="button" data-rx-path="${esc(acc)}">${esc(p)}</button>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function rxRender() {
+  rxRenderCrumbs();
+  const tbody = $("rx-tbody");
+  const empty = $("rx-empty");
+  const more = $("rx-more");
+  const kw = rxState.searchMode ? "" : rxState.localFilter.trim().toLowerCase();
+  const visible = rxState.items.filter((x) => !kw || x.name.toLowerCase().includes(kw));
+  visible.sort((a, b) => (b.is_dir - a.is_dir) || a.name.localeCompare(b.name, "zh-CN"));
+
+  if (rxState.loading && !rxState.items.length) {
+    tbody.innerHTML = "";
+    empty.hidden = false;
+    $("rx-empty-title").textContent = rxState.searchMode ? "正在全站搜索…" : "正在加载目录…";
+    $("rx-empty-sub").textContent = "正在直连 rx.l1ght.xyz";
+    more.hidden = true;
+    return;
+  }
+  if (rxState.error) {
+    tbody.innerHTML = "";
+    empty.hidden = false;
+    $("rx-empty-title").textContent = "资源目录读取失败";
+    $("rx-empty-sub").textContent = `${rxState.error}（可点击上方「切换原站视图」或「新窗口打开」）`;
+    more.hidden = true;
+    return;
+  }
+  if (!visible.length) {
+    tbody.innerHTML = "";
+    empty.hidden = false;
+    $("rx-empty-title").textContent = rxState.searchMode ? "没有搜到匹配文件" : "当前目录没有匹配项";
+    $("rx-empty-sub").textContent = rxState.searchMode ? "试试更换关键词，或点击「返回目录」" : "点击回车可在整个资源站全局搜索";
+    more.hidden = true;
+  } else {
+    empty.hidden = true;
+    tbody.innerHTML = visible.map((x) => {
+      const idx = rxState.items.indexOf(x);
+      const webHref = `${RX_ORIGIN}/${rxEncodePath(x.fullPath)}`;
+      if (x.is_dir) {
+        return `<tr class="row" data-rx-idx="${idx}">`
+          + `<td><div class="rx-name dir"><span class="rx-icon">${rxIcon(x)}</span><span>${esc(x.name)}</span></div>`
+          + (rxState.searchMode ? `<div class="rx-parent">${esc(x.parentPath)}</div>` : "")
+          + `</td>`
+          + `<td class="rx-meta">—</td>`
+          + `<td class="rx-meta">${esc(rxFmtTime(x.modified))}</td>`
+          + `<td class="actions"><button class="btn-ghost btn-sm" type="button" data-rx-open="${idx}">打开目录</button></td>`
+          + `</tr>`;
+      }
+      const dHref = x.sign ? rxDirectUrl(x.fullPath, x.sign) : webHref;
+      return `<tr class="row" data-rx-idx="${idx}">`
+        + `<td><div class="rx-name"><span class="rx-icon">${rxIcon(x)}</span><span>${esc(x.name)}</span></div>`
+        + (rxState.searchMode ? `<div class="rx-parent">${esc(x.parentPath)}</div>` : "")
+        + `</td>`
+        + `<td class="rx-meta">${esc(rxFmtSize(x.size, false))}</td>`
+        + `<td class="rx-meta">${esc(rxFmtTime(x.modified))}</td>`
+        + `<td class="actions">`
+        + (x.sign
+            ? `<a class="btn-primary btn-sm" href="${esc(dHref)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">下载</a> `
+            : `<button class="btn-primary btn-sm" type="button" data-rx-dl="${idx}">下载</button> `)
+        + `<button class="btn-ghost btn-sm" type="button" data-rx-copy="${idx}">复制</button>`
+        + `</td></tr>`;
+    }).join("");
+    more.hidden = rxState.items.length >= rxState.total;
+  }
+  rxRenderReadme(rxState.searchMode ? "" : rxState.readme);
+}
+
+$("rx-crumbs").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-rx-path]");
+  if (!btn) return;
+  $("rx-search").value = "";
+  rxState.localFilter = "";
+  rxLoadDir(btn.dataset.rxPath || "/");
+});
+
+$("rx-tbody").addEventListener("click", async (e) => {
+  const copyBtn = e.target.closest("[data-rx-copy]");
+  if (copyBtn) {
+    e.stopPropagation();
+    const item = rxState.items[Number(copyBtn.dataset.rxCopy)];
+    if (!item) return;
+    const url = await rxResolveFileUrl(item.fullPath, item.sign);
+    try { await navigator.clipboard.writeText(url); toast("已复制下载直链"); }
+    catch { toast(url); }
+    return;
+  }
+  const dlBtn = e.target.closest("[data-rx-dl]");
+  if (dlBtn) {
+    e.stopPropagation();
+    const item = rxState.items[Number(dlBtn.dataset.rxDl)];
+    if (!item) return;
+    dlBtn.disabled = true;
+    const url = await rxResolveFileUrl(item.fullPath, item.sign);
+    dlBtn.disabled = false;
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.click();
+    return;
+  }
+  const openBtn = e.target.closest("[data-rx-open]");
+  const row = e.target.closest("tr[data-rx-idx]");
+  if (e.target.closest("a")) return;
+  const idx = openBtn ? Number(openBtn.dataset.rxOpen) : (row ? Number(row.dataset.rxIdx) : -1);
+  const item = rxState.items[idx];
+  if (!item) return;
+  if (item.is_dir) {
+    $("rx-search").value = "";
+    rxState.localFilter = "";
+    rxLoadDir(item.fullPath);
+  } else if (item.sign) {
+    window.open(rxDirectUrl(item.fullPath, item.sign), "_blank", "noopener");
+  } else {
+    const url = await rxResolveFileUrl(item.fullPath, item.sign);
+    window.open(url, "_blank", "noopener");
+  }
+});
+
+$("rx-search").addEventListener("input", () => {
+  rxState.localFilter = $("rx-search").value;
+  if (!rxState.searchMode) rxRender();
+});
+$("rx-search").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    rxGlobalSearch($("rx-search").value);
+  }
+});
+$("btn-rx-search").onclick = () => rxGlobalSearch($("rx-search").value);
+$("btn-rx-clear").onclick = () => {
+  $("rx-search").value = "";
+  rxState.localFilter = "";
+  rxLoadDir(rxState.path);
+};
+$("btn-rx-refresh").onclick = () => {
+  if (rxState.searchMode) rxGlobalSearch(rxState.searchQuery);
+  else rxLoadDir(rxState.path, 1, false, true);
+};
+$("btn-rx-more").onclick = () => {
+  const nextPage = rxState.page + 1;
+  if (rxState.searchMode) rxGlobalSearch(rxState.searchQuery, nextPage, true);
+  else rxLoadDir(rxState.path, nextPage, true);
+};
+$("btn-rx-mode").onclick = () => {
+  const toEmbed = rxState.mode === "native";
+  rxState.mode = toEmbed ? "embed" : "native";
+  $("rx-native").hidden = toEmbed;
+  $("rx-embed").hidden = !toEmbed;
+  $("btn-rx-mode").textContent = toEmbed ? "返回清爽列表" : "切换原站视图";
+  if (toEmbed) {
+    const frame = $("rx-frame");
+    if (!frame.dataset.loaded) {
+      frame.dataset.loaded = "1";
+      frame.src = RX_ORIGIN + "/";
+    }
+  }
+};
+
 function switchView(view, updateHash = true) {
-  const isGoc = view === "goc";
-  $("view-servers").hidden = isGoc;
-  $("view-goc").hidden = !isGoc;
-  $("tab-servers").classList.toggle("active", !isGoc);
-  $("tab-servers").setAttribute("aria-selected", String(!isGoc));
-  $("tab-goc").classList.toggle("active", isGoc);
-  $("tab-goc").setAttribute("aria-selected", String(isGoc));
-  if (isGoc) {
+  const v = (view === "goc" || view === "rx") ? view : "servers";
+  $("view-servers").hidden = v !== "servers";
+  $("view-goc").hidden = v !== "goc";
+  $("view-rx").hidden = v !== "rx";
+  for (const k of ["servers", "goc", "rx"]) {
+    const tab = $("tab-" + k);
+    const active = k === v;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  }
+  if (v === "goc") {
     const frame = $("goc-frame");
     if (!frame.dataset.loaded) {
       frame.dataset.loaded = "1";
       frame.src = "./goc.html?embed=1";
     }
+  } else if (v === "rx" && !rxState.inited) {
+    rxState.inited = true;
+    rxLoadSettings();
+    rxLoadDir("/");
   }
   if (updateHash && typeof history?.replaceState === "function") {
-    const targetHash = isGoc ? "#goc" : "";
+    const targetHash = v === "servers" ? "" : "#" + v;
     if ((location.hash || "") !== targetHash) {
       history.replaceState(null, "", location.pathname + location.search + targetHash);
     }
@@ -1496,7 +1972,9 @@ function switchView(view, updateHash = true) {
 
 $("tab-servers").onclick = () => switchView("servers");
 $("tab-goc").onclick = () => switchView("goc");
+$("tab-rx").onclick = () => switchView("rx");
 $("btn-goc-back").onclick = () => switchView("servers");
+$("btn-rx-back").onclick = () => switchView("servers");
 
 window.addEventListener("message", (e) => {
   if (e.origin !== location.origin) return;
@@ -1507,27 +1985,35 @@ window.addEventListener("message", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if ($("view-servers").hidden) return;
-  if (e.key === "Escape" && state.openKey) { state.openKey = null; render(); }
   if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
-    e.preventDefault();
-    $("filter").focus();
+    if (!$("view-servers").hidden) {
+      e.preventDefault();
+      $("filter").focus();
+    } else if (!$("view-rx").hidden && !$("rx-native").hidden) {
+      e.preventDefault();
+      $("rx-search").focus();
+    }
+    return;
+  }
+  if (e.key === "Escape" && !$("view-servers").hidden && state.openKey) {
+    state.openKey = null;
+    render();
   }
 });
 
 (function initOpenFromHash() {
   const h = location.hash || "";
-  if (h === "#goc" || h.startsWith("#goc&")) {
-    switchView("goc", false);
-    return;
-  }
+  if (h === "#goc" || h.startsWith("#goc&")) { switchView("goc", false); return; }
+  if (h === "#rx" || h.startsWith("#rx&")) { switchView("rx", false); return; }
   const m = /(?:^|#|&)open=([^&]+)/.exec(h);
   if (m) { try { state.openKey = decodeURIComponent(m[1]); } catch (e) { /* ignore */ } }
 })();
 
 window.addEventListener("hashchange", () => {
   const h = location.hash || "";
-  switchView(h === "#goc" || h.startsWith("#goc&") ? "goc" : "servers", false);
+  if (h === "#goc" || h.startsWith("#goc&")) switchView("goc", false);
+  else if (h === "#rx" || h.startsWith("#rx&")) switchView("rx", false);
+  else switchView("servers", false);
 });
 
 // 启动加载：先读静态快照，再直连 status.php；若已配置本机桥接则同步拉取实时状态

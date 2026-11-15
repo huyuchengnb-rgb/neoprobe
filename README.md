@@ -373,6 +373,7 @@ python tools/scan_ports.py --ports 27000-27900,31000-32000 --timeout 1.6 202.189
     python -m neoprobe --serve --cors-origin https://<你的用户名>.github.io
     ```
 - **GOC 奇术终端（训练模式）**：顶栏可直接切换到 `GOC 奇术终端`（[`docs/goc.html`](docs/goc.html)，整合自 `bairen048-design/RXSEND` / B站小小白仁ovo），内置能量校准、西蒙符印、密码破解、符文转轮 4 关训练与考试计时，背景排队挤服会继续保留在顶部状态条中。
+- **RX 美化资源站**：顶栏可切换到 `RX 美化资源站`（直连 [`rx.l1ght.xyz`](https://rx.l1ght.xyz/) OpenList 接口），支持目录浏览、当前页过滤与全站搜索、一键下载/复制直链、查看目录说明，并可一键切回原站视图。
 - **与桌面版的区别**：不连接本机桥接时，网页本身无法直发 UDP 包，因此本机真实延迟、3 秒抢位与本机 Steam VIP 查询需配合桌面版 `NeoProbe.exe`。
 
 ### 挂载步骤
