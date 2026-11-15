@@ -366,8 +366,13 @@ python tools/scan_ports.py --ports 27000-27900,31000-32000 --timeout 1.6 202.189
 
 - **A2S 服务器状态**：浏览器无法直接发送 UDP 包，由 GitHub Actions 每 5 分钟运行 `python tools/build_pages.py --out _site` 采集所有服务器的 `INFO / PLAYER / RULES` 并部署到 `data/state.json`（不向 `main` 分支刷自动提交）。
 - **回合 / 倒计时**：`status.php` 返回 `Access-Control-Allow-Origin: *`，网页每 10 秒由访客浏览器直连拉取，并在本地每秒走秒。
-- **一键进服**：点击「进服」通过 `steam://connect/<ip>:<port>` 直接拉起 Steam 连服。
-- **与桌面版的区别**：本机真实延迟、15 秒实时 A2S、满员自动挤服与本机 Steam VIP 查询仍需运行桌面版 `NeoProbe.exe` / `python -m neoprobe --serve`。
+- **一键进服与挤服**：点「进服」通过 `steam://connect/<ip>:<port>` 直接拉起 Steam 连服；满员服务器显示「挤服」，支持两种模式：
+  - **纯网页守候**（零配置）：轮询静态快照 + Steam 原生排队链接，检测到空位时响铃 + 桌面通知并拉起 `steam://connect`。
+  - **本机桥接**（3 秒实时 UDP）：在本地用 `--cors-origin` 启动 NeoProbe 后，网页端可直接遥控本机每 3 秒 UDP 探测并自动拉起游戏：
+    ```bash
+    python -m neoprobe --serve --cors-origin https://<你的用户名>.github.io
+    ```
+- **与桌面版的区别**：不连接本机桥接时，网页本身无法直发 UDP 包，因此本机真实延迟、3 秒抢位与本机 Steam VIP 查询需配合桌面版 `NeoProbe.exe`。
 
 ### 挂载步骤
 

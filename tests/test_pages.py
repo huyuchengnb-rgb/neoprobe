@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import tempfile
+import threading
 import unittest
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from neoprobe import a2s, rounds
+from neoprobe import a2s, rounds, server
 from tools import build_pages
 
 
@@ -90,6 +93,46 @@ class CollectSnapshotTest(unittest.TestCase):
             self.assertTrue(state_path.is_file())
             loaded = json.loads(state_path.read_text("utf-8"))
             self.assertEqual(loaded["schema_version"], 1)
+
+
+class _DummyManager:
+    def stamp(self):
+        return (1, 0, (0, 0), 0)
+
+    def snapshot(self):
+        return {"servers": [], "rounds_meta": {}, "client_meta": {}, "game": {}, "queue": None, "vip": {}}
+
+
+class ServerCorsTest(unittest.TestCase):
+    def test_cors_allows_configured_origin_and_pna_only(self):
+        api = server.Api(_DummyManager())
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(
+            api, cors_origins=["https://huyuchengnb-rgb.github.io"],
+        ))
+        port = httpd.server_address[1]
+        t = threading.Thread(target=httpd.serve_forever, daemon=True)
+        t.start()
+        try:
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+            conn.request("OPTIONS", "/api/queue", headers={
+                "Origin": "https://huyuchengnb-rgb.github.io",
+                "Access-Control-Request-Private-Network": "true",
+            })
+            r1 = conn.getresponse()
+            r1.read()
+            self.assertEqual(r1.status, 204)
+            self.assertEqual(r1.getheader("Access-Control-Allow-Origin"), "https://huyuchengnb-rgb.github.io")
+            self.assertEqual(r1.getheader("Access-Control-Allow-Private-Network"), "true")
+
+            conn.request("OPTIONS", "/api/queue", headers={"Origin": "https://evil.example"})
+            r2 = conn.getresponse()
+            r2.read()
+            self.assertEqual(r2.status, 403)
+            self.assertIsNone(r2.getheader("Access-Control-Allow-Origin"))
+            conn.close()
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
 
 
 if __name__ == "__main__":

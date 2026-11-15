@@ -254,6 +254,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--serve", action="store_true", help="启动本地 Web 面板")
     p.add_argument("--host", default="127.0.0.1", help="Web 面板监听地址（默认 127.0.0.1）")
     p.add_argument("--port", type=int, default=8777, help="Web 面板端口（默认 8777）")
+    p.add_argument("--cors-origin", action="append", default=[], metavar="ORIGIN",
+                   help="允许跨域访问本地 API 的来源（如 https://huyuchengnb-rgb.github.io），可多次指定")
     p.add_argument("--no-browser", action="store_true", help="启动 Web 面板时不自动打开浏览器")
     p.add_argument("--data-dir", metavar="DIR",
                    help="数据目录（默认 %%LOCALAPPDATA%%\\NeoProbe）")
@@ -432,7 +434,13 @@ def main(argv: list[str] | None = None) -> int:
         from .server import serve
         mgr = _make_manager(args, data_dir)
         try:
-            serve(mgr, host=args.host, port=args.port, open_browser=not args.no_browser)
+            serve(
+                mgr,
+                host=args.host,
+                port=args.port,
+                open_browser=not args.no_browser,
+                cors_origins=args.cors_origin,
+            )
         except OSError as exc:
             print(C.red(f"无法启动服务：{exc}"))
             return 1

@@ -38,7 +38,18 @@ class Api:
         return body
 
 
-def make_handler(api: Api):
+def _normalize_origins(origins) -> set[str]:
+    out: set[str] = set()
+    for raw in origins or ():
+        s = str(raw or "").strip().rstrip("/")
+        if s:
+            out.add(s)
+    return out
+
+
+def make_handler(api: Api, cors_origins=()):
+    allowed_origins = _normalize_origins(cors_origins)
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "NeoProbe/1.0"
         protocol_version = "HTTP/1.1"      # 长连接：1 秒一次轮询复用同一条 TCP
@@ -48,6 +59,36 @@ def make_handler(api: Api):
         def log_message(self, fmt: str, *args) -> None:  # 静音默认日志
             pass
 
+        def _cors_origin(self) -> str | None:
+            if not allowed_origins:
+                return None
+            origin = (self.headers.get("Origin") or "").strip().rstrip("/")
+            if not origin:
+                return None
+            if "*" in allowed_origins or origin in allowed_origins:
+                return origin
+            return None
+
+        def _send_cors_headers(self, origin: str | None = None) -> bool:
+            matched = origin if origin is not None else self._cors_origin()
+            if not matched:
+                return False
+            self.send_header("Access-Control-Allow-Origin", matched)
+            self.send_header("Vary", "Origin")
+            if (self.headers.get("Access-Control-Request-Private-Network") or "").lower() == "true":
+                self.send_header("Access-Control-Allow-Private-Network", "true")
+            return True
+
+        def do_OPTIONS(self) -> None:
+            origin = self._cors_origin()
+            self.send_response(204 if origin else 403)
+            if self._send_cors_headers(origin):
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type")
+                self.send_header("Access-Control-Max-Age", "600")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
         def _json(self, payload, status: int = 200) -> None:
             body = json.dumps(payload, ensure_ascii=False,
                               separators=(",", ":")).encode("utf-8")
@@ -55,6 +96,7 @@ def make_handler(api: Api):
 
         def _raw(self, body: bytes, status: int = 200) -> None:
             self.send_response(status)
+            self._send_cors_headers()
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
@@ -268,14 +310,14 @@ def make_handler(api: Api):
 
 
 def serve(manager: QueryManager, host: str = "127.0.0.1", port: int = 8777,
-          open_browser: bool = True) -> None:
+          open_browser: bool = True, cors_origins=()) -> None:
     manager.start_auto()
     manager.start_rounds()
     manager.start_slots()
     manager.start_game_watch()
     manager.start_vip_watch()
     manager.refresh()
-    httpd = ThreadingHTTPServer((host, port), make_handler(Api(manager)))
+    httpd = ThreadingHTTPServer((host, port), make_handler(Api(manager), cors_origins=cors_origins))
     httpd.daemon_threads = True
     url = f"http://{host}:{port}/"
     print(f"NeoProbe 已启动: {url}")
