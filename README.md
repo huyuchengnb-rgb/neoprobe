@@ -372,6 +372,7 @@ python tools/scan_ports.py --ports 27000-27900,31000-32000 --timeout 1.6 202.189
     ```bash
     python -m neoprobe --serve --cors-origin https://<你的用户名>.github.io
     ```
+- **GOC 奇术终端（训练模式）**：顶栏可直接切换到 `GOC 奇术终端`（[`docs/goc.html`](docs/goc.html)，整合自 `bairen048-design/RXSEND` / B站小小白仁ovo），内置能量校准、西蒙符印、密码破解、符文转轮 4 关训练与考试计时，背景排队挤服会继续保留在顶部状态条中。
 - **与桌面版的区别**：不连接本机桥接时，网页本身无法直发 UDP 包，因此本机真实延迟、3 秒抢位与本机 Steam VIP 查询需配合桌面版 `NeoProbe.exe`。
 
 ### 挂载步骤
@@ -450,7 +451,9 @@ tools/
   gmod/         可选客户端探针与服务端上报 Lua 脚本
   server/       配套 PHP 回合接收端（rounds.php）
 docs/
-  index.html    GitHub Pages 静态网页版（直连 status.php + 消费 A2S 快照）
+  index.html    GitHub Pages 静态网页版（直连 status.php + 消费 A2S 快照 + 内嵌 GOC 终端）
+  goc.html      GOC 奇术终端 · 训练模式页面
+  assets/goc-yuai.mp3  默认背景音乐（雨爱）
   data/state.json  初始快照（Actions 运行时自动生成最新 _site/data/state.json）
 .github/workflows/
   pages.yml     每 5 分钟定时采集并部署 GitHub Pages

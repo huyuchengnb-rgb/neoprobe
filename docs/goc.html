@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GOC 奇术终端 · 训练模式 · NeoProbe</title>
+<link rel="icon" type="image/png" href="./favicon.png">
+<style>
+:root{color-scheme:dark;--cyan:#05c9f4;--line:#196594;--ink:#d6e8f6;--dim:#9db5cb}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 12px;background:radial-gradient(ellipse at 50% 20%,#133747,#080e19 72%);color:var(--ink);font:15px/1.5 "Microsoft YaHei UI",sans-serif}
+body.embedded{min-height:0;display:block;padding:0;background:transparent}
+.terminal{width:min(860px,100%);border:1px solid #155780;background:#101f37;box-shadow:0 16px 90px #0009;margin:0 auto}
+body.embedded .terminal{width:100%;border-radius:10px;overflow:hidden;box-shadow:0 10px 30px rgba(8,14,25,.16)}
+header{display:flex;align-items:center;gap:12px;background:#122c50;border-bottom:1px solid #1786c0;padding:14px 20px}
+.sigil{color:#7ae6ff;font-size:31px;line-height:1}.brand{font-size:17px}.sub{font:10px monospace;letter-spacing:.5px;color:#a9bfd6}.badge{margin-left:auto;font:12px monospace;color:#66ddff;border:1px solid #2679a5;background:#123d61;padding:5px 9px}
+nav{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;background:#0b192c;border-bottom:1px solid #163956}
+button,.hdr-link{font:inherit;color:#f0faff;cursor:pointer;border:1px solid #1684c4;border-radius:3px;background:#105084;padding:7px 12px;text-decoration:none}
+button:hover:not(:disabled),.hdr-link:hover{filter:brightness(1.22)}button:focus-visible,input:focus-visible,.hdr-link:focus-visible{outline:2px solid #b9f2ff;outline-offset:3px}button:disabled{cursor:default;opacity:.55}
+.hdr-link{font-size:13px;background:#142c48;white-space:nowrap}
+nav button{font-size:13px;background:#142c48}nav button.active{background:#106788}nav #reset{margin-left:auto}
+main{padding:18px 24px 20px;min-height:490px;background:radial-gradient(ellipse at top right,#16476b70,transparent 55%)}
+h1{display:inline-block;margin:0;padding:4px 10px;border:1px solid #178fb7;background:#124260;color:var(--cyan);font-size:17px;letter-spacing:.5px}
+p{margin:9px 0}.desc{color:#e0ebf5}.play{width:min(620px,100%);margin:24px auto 0;text-align:center}.status{min-height:27px;margin-top:13px;font-weight:bold}.muted{color:var(--dim);font-size:13px}
+footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#0b192c;padding:10px 20px;border-top:1px solid #163956;color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
+.primary{background:#008bbb;border-color:#02b9e9;min-width:136px;padding:9px 20px;font-weight:bold}
+canvas{display:block;width:100%;height:auto;background:#080f22;border-radius:6px}
+.controls{width:min(480px,100%);margin:22px auto 0;text-align:left}.controls label{display:flex;flex-direction:column;margin:7px 0;font-size:13px}input[type=range]{width:100%;margin:4px 0;accent-color:var(--cyan)}
+.runes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:min(345px,100%);margin:0 auto 14px}.runes button{aspect-ratio:1.18;background:#102b50;border:2px solid #145582;font-size:21px;opacity:1}.runes button.lit{background:var(--cyan);color:#05202b;box-shadow:0 0 24px #06bce76b}.runes button:disabled:not(.lit){color:#b9c9d7}
+.panel{width:min(100%,560px);min-height:310px;margin:auto;padding:14px 20px;background:#112c50;border:1px solid #236a96}
+.password-guide{padding-bottom:9px;margin:0;border-bottom:1px solid #246490}
+.slots,.symbols{display:flex;justify-content:center;flex-wrap:wrap}.slots{gap:clamp(10px,4vw,40px);margin:8px 0 24px}.tile{display:grid;place-items:center;background:#10294a;border:1px solid #246490;min-width:46px;min-height:44px;font-size:17px}.tile.selected{outline:1px solid var(--cyan);outline-offset:2px}.tile.green{border-color:#46dca8;color:#7dfad4}.tile.yellow{border-color:#ffda57;color:#ffe486}.tile.red{border-color:#f76b59;color:#ff9e92}.symbols{gap:8px;margin:12px 0 20px}.symbols button{background:#00a5d7;min-width:41px}
+.wheel-progress{color:#23c5ed;font-weight:bold;margin:0 0 4px}
+.wheel{position:relative;overflow:hidden;margin:0 auto 20px;width:145px;height:145px;background:#0d182d;border:1px solid #25658e}
+.wheel span{position:absolute;top:50%;left:0;right:0;height:40px;text-align:center;color:#90a9c3;font:bold 16px/40px monospace}
+.wheel span.target{color:#e0effb}
+.wheel span.match{color:#57ef9e;text-shadow:0 0 8px #57ef9e70}
+.wheel::after{content:"";position:absolute;top:50%;left:6px;right:6px;height:38px;transform:translateY(-50%);border-block:1px solid #39c9f580;pointer-events:none}
+.wheel.flash-good::after,.wheel.flash-bad::after{visibility:hidden}
+.author{font-size:11px;color:#8ce1f5;margin-top:3px}
+.wheel.flash-good{background:#18b774;border-color:#70edaf}.wheel.flash-bad{background:#a32c39;border-color:#ff7070}
+.wheel.flash-good span,.wheel.flash-bad span{visibility:hidden}
+.word{display:flex;justify-content:center;gap:12px;margin:8px 0;font:bold 16px monospace;color:#a4b6c9}.word .done{color:#57dfad}
+[hidden]{display:none!important}
+.lobby{position:relative;min-height:440px;display:grid;place-content:center;text-align:center;padding:20px 12px 64px}
+.lobby h1{margin:0 0 26px;border:0;background:none;font-size:clamp(42px,8vw,82px);font-weight:950;line-height:1.15;color:#5edaff;letter-spacing:.04em;text-shadow:0 4px #125993,0 9px #091527,0 0 30px #1287dc70}
+.lobby-author{position:absolute;right:0;bottom:0;text-align:right;color:#b9d4e8;font-size:12px}
+.lobby-author p{margin:3px 0}.resource-group{color:#72dcf5}
+.music-controls{margin-left:auto;display:flex;gap:6px;align-items:center}
+.music-controls select{width:min(195px,35vw);min-width:0;padding:6px;color:var(--ink);background:#0b192c;border:1px solid #1684c4;border-radius:3px;font:inherit;font-size:13px}
+.music-controls button{font-size:13px;white-space:nowrap}.music-controls button.active{background:#106788}
+@media(max-width:660px){header{flex-wrap:wrap}.music-controls{flex-basis:100%;justify-content:flex-end}.music-controls select{width:min(195px,60vw)}}
+.lobby-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.rank-button{margin-left:auto;white-space:nowrap}
+#mode{margin-left:0}
+.entry input{width:min(100%,280px);padding:9px;color:var(--ink);background:#0b192c;border:1px solid var(--line);border-radius:3px;font:inherit}
+.entry label{display:block;margin:12px 0}
+.score{font-size:34px;color:var(--cyan);font-weight:bold;font-variant-numeric:tabular-nums}
+.rank-dialog{max-width:min(460px,calc(100% - 24px));width:100%;color:var(--ink);background:#112c50;border:1px solid #236a96;padding:20px}
+.rank-dialog::backdrop{background:#050b15b8}.rank-dialog ol{padding-left:24px}.rank-dialog li{padding:4px 0;overflow-wrap:anywhere}
+@media(max-width:480px){main{padding:14px;min-height:460px}header,nav,footer{padding-inline:12px}nav #reset{margin-left:0}}
+</style>
+<div class="terminal">
+  <header>
+    <span class="sigil" aria-hidden="true">✧</span>
+    <div>
+      <div class="brand">GOC 奇术终端</div>
+      <div class="sub">THAUMATURGY TERMINAL · SECURE CHANNEL</div>
+    </div>
+    <a id="back-neoprobe" class="hdr-link" href="./" hidden>← 服务器监控</a>
+    <button id="ranking" class="rank-button">在线排名</button>
+    <span class="badge" id="mode" hidden></span>
+    <div class="music-controls">
+      <select id="music-track" aria-label="选择背景音乐">
+        <option value="">DJ冷冰冰 - 雨爱</option>
+        <option value="https://bairen048-design.github.io/RXSEND/music/hero.mp3">FLOW - HERO 〜希望の歌〜</option>
+        <option value="https://bairen048-design.github.io/RXSEND/music/change.mp3">miwa - chAngE</option>
+        <option value="https://bairen048-design.github.io/RXSEND/music/ninelie.mp3">Aimer,EGOIST - ninelie</option>
+        <option value="https://bairen048-design.github.io/RXSEND/music/hopes-and-dreams.mp3">SayMaxWell - Hopes and Dreams</option>
+      </select>
+      <button id="music-toggle" aria-pressed="false">音乐：关</button>
+    </div>
+  </header>
+  <nav aria-label="练习模式" id="nav">
+    <button id="back-home">首页</button><button data-stage="1">1 能量校准</button><button data-stage="2">2 西蒙符印</button><button data-stage="3">3 密码破解</button><button data-stage="4">4 符文转轮</button><button id="reset">重新开始</button>
+  </nav>
+  <main id="main"></main>
+  <footer>
+    <span>RXSEND MIO · GOC 训练 · <a style="color:#76e2ff" href="https://bairen048-design.github.io/RXSEND/downloads/gmod-dark-join.zip" download>下载 GMod 护眼补丁</a> · <a style="color:#76e2ff" href="https://bairen048-design.github.io/RXSEND/" target="_blank" rel="noopener">原站</a></span>
+    <span id="clock">用时 00:00</span>
+  </footer>
+</div>
+<dialog id="rank-dialog" class="rank-dialog">
+  <h2>在线排名</h2><p id="rank-status" aria-live="polite"></p><ol id="rank-list"></ol>
+  <form method="dialog"><button>关闭</button></form>
+</dialog>
+<audio id="background-music" loop preload="none" src="./assets/goc-yuai.mp3"></audio>
+<script>
+'use strict';
+const isEmbed = new URLSearchParams(location.search).get('embed') === '1' || window.self !== window.top;
+if (isEmbed) {
+  document.body.classList.add('embedded');
+} else {
+  document.querySelector('#back-neoprobe').hidden = false;
+}
+
+const main = document.querySelector('#main');
+const modeLabel = document.querySelector('#mode');
+const titles = ['能量校准', '西蒙符印', '密码破解', '符文转轮'];
+const rand = n => Math.floor(Math.random() * n);
+let mode = 0, stage = 1, generation = 0, startedAt = performance.now(), finishedAt = null;
+let cancelStage = () => {};
+const nav = document.querySelector('#nav');
+const clock = document.querySelector('#clock');
+const rankDialog = document.querySelector('#rank-dialog');
+const rankStatus = document.querySelector('#rank-status');
+const rankList = document.querySelector('#rank-list');
+// Set these to the project's public connection values after installing leaderboard.sql.
+const ranking = {url: '', key: ''};
+let playerName = '';
+let screen = 'lobby';
+let personalBest = null;
+
+function notifyParentHeight() {
+  if (!isEmbed || window.parent === window) return;
+  const term = document.querySelector('.terminal');
+  if (!term) return;
+  const h = Math.ceil(term.getBoundingClientRect().height);
+  if (h > 0) window.parent.postMessage({type: 'neoprobe-goc-height', height: h}, '*');
+}
+if (isEmbed && typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(notifyParentHeight);
+  ro.observe(document.querySelector('.terminal'));
+}
+
+function showLobby() {
+  cancelStage();
+  cancelStage = () => {};
+  generation++;
+  screen = 'lobby';
+  nav.hidden = true;
+  clock.hidden = true;
+  modeLabel.hidden = true;
+  main.innerHTML = '<section class="lobby"><h1>GOC补习班</h1><div class="lobby-actions"><button class="primary" id="exam">GOC考试</button><button class="primary" id="practice">小题特训</button></div><div class="lobby-author"><p>作者———哔哩哔哩-小小白仁ovo</p><p class="resource-group">资源群 QQ群：1107520691</p></div></section>';
+  main.querySelector('#exam').onclick = examEntry;
+  main.querySelector('#practice').onclick = () => start(1);
+  notifyParentHeight();
+}
+
+function examEntry() {
+  main.innerHTML = '<section class="lobby entry"><div><h2>GOC考试</h2><p>连续完成四关，记录通关用时。</p><form id="exam-entry"><label>玩家名字（最多 16 个字）<br><input name="player" required autocomplete="nickname"></label><p class="muted" id="name-error" aria-live="polite"></p><button class="primary">开始考试</button></form><p><button id="cancel-exam">返回</button></p></div></section>';
+  const form = main.querySelector('#exam-entry');
+  form.elements.player.value = playerName;
+  form.elements.player.focus();
+  form.onsubmit = event => {
+    event.preventDefault();
+    const name = form.elements.player.value.trim();
+    if (!name || Array.from(name).length > 16) {
+      main.querySelector('#name-error').textContent = '请输入 1 到 16 个字的玩家名字。';
+      return;
+    }
+    playerName = name;
+    start(0);
+  };
+  main.querySelector('#cancel-exam').onclick = showLobby;
+  notifyParentHeight();
+}
+
+async function rankingRequest(action, body = {}) {
+  const response = await fetch(ranking.url.replace(/\/$/, '') + '/rest/v1/rpc/' + action, {
+    method: 'POST',
+    headers: {apikey: ranking.key, 'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) throw new Error('排行榜请求失败');
+  return response.json();
+}
+
+document.querySelector('#ranking').onclick = async () => {
+  rankList.replaceChildren();
+  rankDialog.showModal();
+  if (!ranking.url || !ranking.key) {
+    rankStatus.textContent = '目前是滚木 上线遥遥无期';
+    return;
+  }
+  rankStatus.textContent = '正在读取成绩…';
+  try {
+    const results = await rankingRequest('goc_rankings');
+    rankStatus.textContent = results.length ? '按通关用时从短到长排列' : '还没有通关成绩';
+    results.forEach(result => {
+      const row = document.createElement('li');
+      row.textContent = result.player_name + ' · ' + formatResult(result.elapsed_ms);
+      rankList.append(row);
+    });
+  } catch {
+    rankStatus.textContent = '暂时无法读取在线排名，请稍后再试。';
+  }
+};
+
+function formatResult(ms) {
+  return formatTime(ms) + '.' + String(ms % 1000).padStart(3, '0');
+}
+
+function recordExam(ms, message, submit) {
+  const key = 'goc-exam-best:' + playerName;
+  try { personalBest = Number(localStorage.getItem(key)) || null; } catch {}
+  personalBest = Math.min(personalBest ?? ms, ms);
+  try { localStorage.setItem(key, String(personalBest)); } catch {}
+  message.textContent = '本机最佳 ' + formatResult(personalBest);
+  if (!ranking.url || !ranking.key) return;
+  const name = playerName;
+  submit.hidden = false;
+  submit.onclick = async () => {
+    submit.disabled = true;
+    try {
+      await rankingRequest('goc_submit_score', {name_input: name, elapsed_input: ms});
+      message.textContent = '成绩已提交 · 本机最佳 ' + formatResult(personalBest);
+    } catch {
+      message.textContent = '成绩暂未上传，点击按钮可重试。';
+      submit.disabled = false;
+    }
+  };
+}
+const music = document.querySelector('#background-music');
+const musicToggle = document.querySelector('#music-toggle');
+const musicTrack = document.querySelector('#music-track');
+const originalTrack = music.getAttribute('src');
+music.volume = 0.5;
+let musicEnabled = false;
+
+function setMusicEnabled(enabled) {
+  musicEnabled = enabled;
+  musicToggle.textContent = '音乐：' + (enabled ? '开' : '关');
+  musicToggle.setAttribute('aria-pressed', String(enabled));
+  musicToggle.classList.toggle('active', enabled);
+  if (!enabled) music.pause();
+}
+
+function playMusic() {
+  if (musicEnabled && music.paused) {
+    music.play().catch(error => {
+      if (error.name !== 'AbortError') setMusicEnabled(false);
+    });
+  }
+}
+
+musicToggle.onclick = () => {
+  setMusicEnabled(!musicEnabled);
+  playMusic();
+};
+musicTrack.onchange = () => {
+  music.src = musicTrack.value || originalTrack;
+  playMusic();
+};
+
+function start(selected) {
+  mode = selected;
+  screen = 'play';
+  nav.hidden = false;
+  clock.hidden = false;
+  modeLabel.hidden = false;
+  startedAt = performance.now();
+  finishedAt = null;
+  document.querySelectorAll('[data-stage]').forEach(button => {
+    const active = Number(button.dataset.stage) === mode;
+    button.hidden = mode === 0;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  modeLabel.textContent = mode ? '小题特训' : 'GOC考试';
+  show(mode || 1);
+  playMusic();
+  notifyParentHeight();
+}
+
+function show(next) {
+  cancelStage();
+  cancelStage = () => {};
+  generation++;
+  stage = next;
+  [calibration, simon, password, wheel][stage - 1]();
+  notifyParentHeight();
+}
+
+function layout(desc, contents) {
+  main.innerHTML = '<h1>第 ' + stage + ' 关 / 4 · ' + titles[stage - 1] + '</h1><p class="desc">' +
+    desc + '</p><div class="play">' + contents + '<div class="status" id="status" aria-live="polite"></div></div>';
+  return main.querySelector('#status');
+}
+
+function pass(status) {
+  const run = generation;
+  const completedAt = performance.now();
+  status.textContent = '校验通过';
+  setTimeout(() => {
+    if (run !== generation) return;
+    if (!mode && stage < 4) { show(stage + 1); return; }
+    cancelStage();
+    finishedAt = completedAt;
+    const elapsed = Math.round(finishedAt - startedAt);
+    main.innerHTML = '<h1>' + (mode ? '训练完成' : '考试完成') + '</h1><div class="play"><p>本次用时</p><p class="score">' +
+      formatResult(elapsed) + '</p><p id="result-status" class="muted" aria-live="polite"></p><div class="lobby-actions"><button class="primary" id="again">再练一次</button><button id="submit-score" hidden>提交到在线排名</button></div></div>';
+    if (!mode) recordExam(elapsed, main.querySelector('#result-status'), main.querySelector('#submit-score'));
+    main.querySelector('#again').onclick = () => start(mode);
+    notifyParentHeight();
+  }, 500);
+}
+
+function formatTime(ms) {
+  const seconds = Math.floor(ms / 1000);
+  return String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+}
+
+function calibration() {
+  const names = ['振幅', '频率', '相位', '偏移'];
+  const status = layout('调整蓝色波形，使它与橙色目标重合。', '<canvas id="graph" width="620" height="160" aria-label="蓝色练习波形与橙色目标波形"></canvas><div class="controls">' +
+    names.map((name, i) => '<label>' + name + '<input type="range" min="0" max="100" value="' + [34, 42, 15, 50][i] + '"></label>').join('') + '</div>');
+  const canvas = main.querySelector('canvas');
+  const context = canvas.getContext('2d');
+  const sliders = Array.from(main.querySelectorAll('input'));
+  const target = [25 + rand(58), 20 + rand(69), 12 + rand(76), 20 + rand(61)];
+  const draw = (values, color) => {
+    const [amp, freq, phase, offset] = values;
+    context.beginPath();
+    for (let x = 0; x <= canvas.width; x++) {
+      const angle = Math.PI * 2 * ((1 + freq * .025) * x / canvas.width + phase / 100);
+      const y = 80 + (offset - 50) * .6 - (12 + .43 * amp) * (Math.sin(angle) + .23 * Math.sin(2 * angle + .8));
+      if (x === 0) context.moveTo(x, y); else context.lineTo(x, y);
+    }
+    context.strokeStyle = color;
+    context.lineWidth = 1.5;
+    context.stroke();
+  };
+  function update() {
+    const values = sliders.map(slider => Number(slider.value));
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    draw(target, '#ffbd37');
+    draw(values, '#09d0f5');
+    if (values.every((value, i) => Math.abs(value - target[i]) <= 2)) {
+      sliders.forEach(slider => slider.disabled = true);
+      pass(status);
+    }
+  }
+  sliders.forEach(slider => slider.oninput = update);
+  update();
+}
+
+function simon() {
+  const symbols = Array.from('火水风土雷光');
+  const status = layout('记住符文的点亮顺序，播放结束后按原顺序点击。', '<p id="round" class="muted"></p><div class="runes">' +
+    symbols.map(symbol => '<button disabled>' + symbol + '</button>').join('') + '</div><button id="play" class="primary">开始</button>');
+  const pads = Array.from(main.querySelectorAll('.runes button'));
+  const play = main.querySelector('#play');
+  const roundLabel = main.querySelector('#round');
+  const sequences = [4, 5, 6].map(length => Array.from({length}, () => rand(symbols.length)));
+  // Keep a new round from coincidentally repeating the entire previous prefix.
+  for (let i = 1; i < sequences.length; i++) {
+    const previous = sequences[i - 1];
+    if (previous.every((symbol, j) => symbol === sequences[i][j])) {
+      const j = rand(previous.length);
+      sequences[i][j] = (previous[j] + 1 + rand(symbols.length - 1)) % symbols.length;
+    }
+  }
+  const feedback = new Map();
+  let round = 0, input = 0, accepting = false, timeout;
+  const updateRound = () => roundLabel.textContent = '第 ' + (round + 1) + ' / 3 轮 · ' + (4 + round) + ' 次点亮';
+  function watch() {
+    feedback.forEach(animation => animation.cancel());
+    feedback.clear();
+    play.disabled = true;
+    play.hidden = true;
+    input = 0;
+    status.textContent = '正在播放…';
+    let index = 0;
+    function flash() {
+      if (index === round + 4) {
+        pads.forEach(pad => pad.disabled = false);
+        accepting = true;
+        status.textContent = '请复现顺序 · 0 / ' + (4 + round);
+        return;
+      }
+      const pad = pads[sequences[round][index++]];
+      pad.classList.add('lit');
+      timeout = setTimeout(() => {
+        pad.classList.remove('lit');
+        timeout = setTimeout(flash, 140);
+      }, 320);
+    }
+    timeout = setTimeout(flash, 220);
+  }
+  pads.forEach((pad, index) => pad.onclick = () => {
+    if (!accepting) return;
+    feedback.get(pad)?.cancel();
+    feedback.set(pad, pad.animate([
+      {backgroundColor: '#102b50', offset: 0},
+      {backgroundColor: '#05c9f4', color: '#05202b', boxShadow: '0 0 20px #06bce76b', offset: .22},
+      {backgroundColor: '#102b50', offset: 1}
+    ], 180));
+    if (index !== sequences[round][input]) {
+      accepting = false;
+      pads.forEach(button => button.disabled = true);
+      status.textContent = '顺序有误，请重试当前轮';
+      play.textContent = '重播当前轮';
+      play.disabled = false;
+      play.hidden = false;
+      return;
+    }
+    input++;
+    status.textContent = '请复现顺序 · ' + input + ' / ' + (4 + round);
+    if (input !== 4 + round) return;
+    accepting = false;
+    pads.forEach(button => button.disabled = true);
+    if (round === 2) { pass(status); return; }
+    round++;
+    updateRound();
+    status.textContent = '上一轮通过';
+    timeout = setTimeout(watch, 220);
+  });
+  play.onclick = watch;
+  cancelStage = () => {
+    clearTimeout(timeout);
+    feedback.forEach(animation => animation.cancel());
+  };
+  updateRound();
+  status.textContent = '点击「开始」播放';
+}
+
+function grade(answer, guess) {
+  const colors = guess.map((symbol, i) => symbol === answer[i] ? 'green' : 'red');
+  const remaining = new Map();
+  answer.forEach((symbol, i) => {
+    if (colors[i] !== 'green') remaining.set(symbol, (remaining.get(symbol) || 0) + 1);
+  });
+  guess.forEach((symbol, i) => {
+    const count = remaining.get(symbol) || 0;
+    if (colors[i] === 'red' && count > 0) {
+      colors[i] = 'yellow';
+      remaining.set(symbol, count - 1);
+    }
+  });
+  return colors;
+}
+
+function password() {
+  const symbols = Array.from('空火水风土雷');
+  const answer = Array.from({length: 4}, () => symbols[rand(symbols.length)]);
+  const status = layout('破解 4 位符文密码，按反馈推理出正确组合。', '<div class="panel"><p class="muted password-guide">破解 4 位符文密码 · 提交后告知「位置对 / 错位」</p><p>当前猜测</p><div class="slots">' +
+    Array.from({length: 4}, () => '<button class="tile">nil</button>').join('') +
+    '</div><div class="symbols">' + symbols.map(symbol => '<button>' + symbol + '</button>').join('') +
+    '</div><button id="submit" class="primary" disabled>提交解密</button><p class="muted" id="attempts"></p></div>');
+  const tiles = Array.from(main.querySelectorAll('.slots button'));
+  const submit = main.querySelector('#submit');
+  const symbolButtons = Array.from(main.querySelectorAll('.symbols button'));
+  const guess = [null, null, null, null];
+  let colors = [null, null, null, null];
+  let active = 0, attempts = 4, done = false;
+  function render() {
+    tiles.forEach((tile, i) => {
+      tile.className = 'tile' + (i === active ? ' selected' : '') + (colors[i] ? ' ' + colors[i] : '');
+      tile.textContent = guess[i] ?? 'nil';
+    });
+    main.querySelector('#attempts').textContent = '剩余 ' + attempts + ' 次';
+    submit.disabled = done || guess.includes(null);
+  }
+  tiles.forEach((tile, i) => tile.onclick = () => { if (!done) { active = i; render(); } });
+  symbolButtons.forEach((button, i) => button.onclick = () => {
+    if (done) return;
+    guess[active] = symbols[i];
+    colors[active] = null;
+    active = (active + 1) % 4;
+    render();
+  });
+  submit.onclick = () => {
+    if (done || guess.includes(null)) return;
+    colors = grade(answer, guess);
+    attempts--;
+    render();
+    if (colors.every(color => color === 'green')) {
+      done = true;
+      submit.disabled = true;
+      pass(status);
+      return;
+    }
+    if (attempts === 0) {
+      done = true;
+      submit.disabled = true;
+      status.textContent = '次数用完 · 答案 ' + answer.join(' ');
+      const retry = document.createElement('button');
+      retry.textContent = '重试本关';
+      retry.onclick = () => show(3);
+      status.after(retry);
+      return;
+    }
+    active = 0;
+    render();
+    status.textContent = '破解失败，请重试';
+  };
+  render();
+}
+
+function wheel() {
+  const words = ['RITUAL', 'WARD'];
+  const stepMs = 225;
+  const status = layout('点击转轮锁定字母，拼出目标单词。', '<p id="word-progress" class="wheel-progress"></p><div class="wheel" aria-label="字母转轮">' +
+    '<span></span>'.repeat(5) + '</div><button id="lock" class="primary">固定</button><div class="word"></div>');
+  const reel = main.querySelector('.wheel');
+  const letters = Array.from(reel.querySelectorAll('span'));
+  const progress = main.querySelector('#word-progress');
+  const wordDisplay = main.querySelector('.word');
+  const lock = main.querySelector('#lock');
+  let word = 0, index = 0, displayed = '', pool = [], started, frameId, flashTimer;
+  function render() {
+    progress.textContent = '单词 ' + (word + 1) + ' / 2 · 字母 ' + (index + 1) + ' / ' + words[word].length;
+    wordDisplay.innerHTML = Array.from(words[word], (letter, i) =>
+      '<span class="' + (i < index ? 'done' : '') + '">' + letter + '</span>').join('');
+  }
+  function shuffleWheel() {
+    pool = Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = rand(i + 1);
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    started = performance.now();
+    render();
+    paint(started);
+  }
+  function paint(now) {
+    const position = (now - started) / stepMs;
+    const center = Math.round(position);
+    displayed = pool[center % pool.length];
+    letters.forEach((cell, i) => {
+      const slot = center + i - 2;
+      cell.textContent = pool[(slot + pool.length) % pool.length];
+      cell.style.transform = 'translateY(' + ((slot - position) * 40 - 20) + 'px)';
+      cell.classList.toggle('target', i === 2);
+      cell.classList.toggle('match', cell.textContent === words[word][index]);
+    });
+    frameId = requestAnimationFrame(paint);
+  }
+  function fix() {
+    if (lock.disabled) return;
+    lock.disabled = true;
+    cancelAnimationFrame(frameId);
+    const correct = displayed === words[word][index];
+    const flash = correct ? 'flash-good' : 'flash-bad';
+    reel.classList.add(flash);
+    flashTimer = setTimeout(() => {
+      reel.classList.remove(flash);
+      if (correct) {
+        index++;
+        if (index === words[word].length) {
+          if (word === 1) {
+            Array.from(wordDisplay.children).forEach(letter => letter.className = 'done');
+            pass(status);
+            return;
+          }
+          word++;
+          index = 0;
+          status.textContent = '第一个单词完成！';
+        } else {
+          status.textContent = '';
+        }
+      } else {
+        index = 0;
+        status.textContent = '锁定错误，从当前单词的首字母重来';
+      }
+      lock.disabled = false;
+      shuffleWheel();
+    }, 230);
+  }
+  shuffleWheel();
+  lock.onclick = fix;
+  reel.onclick = fix;
+  cancelStage = () => {
+    cancelAnimationFrame(frameId);
+    clearTimeout(flashTimer);
+  };
+}
+
+document.querySelectorAll('[data-stage]').forEach(button => button.onclick = () => start(Number(button.dataset.stage)));
+document.querySelector('#reset').onclick = () => start(mode);
+document.querySelector('#back-home').onclick = showLobby;
+setInterval(() => {
+  if (screen === 'play') clock.textContent = '用时 ' + formatTime((finishedAt ?? performance.now()) - startedAt);
+}, 200);
+showLobby();
+</script>
+</html>

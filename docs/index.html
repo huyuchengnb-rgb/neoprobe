@@ -218,6 +218,35 @@
   }
   .cmd-box code{flex:1;font-family:var(--mono);font-size:12px;word-break:break-all;color:var(--ink)}
 
+  /* ---------- 主功能切换 / GOC 奇术终端 ---------- */
+  .nav-tabs{
+    display:inline-flex;gap:6px;flex-wrap:wrap;padding:5px;margin-bottom:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  }
+  .nav-tab{
+    display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border-radius:8px;
+    font-size:13px;font-weight:600;color:var(--ink2);background:transparent;border:none;
+    cursor:pointer;transition:.15s;
+  }
+  .nav-tab:hover{background:var(--panel2);color:var(--accent)}
+  .nav-tab.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(91,75,214,.25)}
+  .nav-tab .tab-tag{
+    font-size:10.5px;padding:1px 6px;border-radius:10px;font-weight:600;
+    background:var(--accentbg);color:var(--accent);
+  }
+  .nav-tab.active .tab-tag{background:rgba(255,255,255,.22);color:#fff}
+  .goc-bar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;
+    font-size:13px;color:var(--ink2);
+  }
+  .goc-bar b{color:var(--ink)}
+  .goc-wrap{
+    border-radius:12px;overflow:hidden;border:1px solid #155780;background:#101f37;
+    box-shadow:0 12px 34px rgba(16,28,56,.14);
+  }
+  #goc-frame{display:block;width:100%;height:670px;border:0;background:#101f37}
+
   /* ---------- 空态 / 弹窗 / toast ---------- */
   .empty{padding:52px 20px;text-align:center;color:var(--ink3)}
   .empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:6px}
@@ -294,6 +323,16 @@
     </div>
   </div>
 
+  <div class="nav-tabs" role="tablist" aria-label="功能模块">
+    <button class="nav-tab active" id="tab-servers" data-view="servers" role="tab" aria-selected="true" type="button">服务器监控</button>
+    <button class="nav-tab" id="tab-goc" data-view="goc" role="tab" aria-selected="false" type="button" title="排队挤服或等局期间随时练习 GOC 奇术解密">
+      ✧ GOC 奇术终端 <span class="tab-tag">训练模式</span>
+    </button>
+  </div>
+
+  <div class="queue-banner" id="queue-banner" hidden></div>
+
+  <section id="view-servers">
   <div class="bar">
     <input id="filter" type="text" placeholder="过滤名称 / 地图 / 地址（按 / 聚焦）" autocomplete="off">
     <div class="grow"></div>
@@ -313,8 +352,6 @@
     <button class="btn-primary" id="btn-refresh" title="同时刷新静态快照和实时回合接口">立即刷新</button>
     <button class="btn-ghost" id="btn-about" title="了解网页版的数据来源与本地版区别">说明</button>
   </div>
-
-  <div class="queue-banner" id="queue-banner" hidden></div>
 
   <div class="panel">
     <div class="table-wrap">
@@ -343,6 +380,19 @@
   <div class="notice">
     <span>挤服说明：未连接本机桥接时，点击满员服的「挤服」会以<b>网页守候</b>模式轮询（受限于 GitHub Actions 快照频率，约 5 分钟更新一轮），空位出现时自动响铃 + 桌面通知并拉起 <code>steam://connect</code>；若在本机运行带桥接参数的 <code>NeoProbe</code>（点顶栏「本机桥接」查看命令），网页即可直接遥控本机做 <b>3 秒实时 UDP 抢位</b>。</span>
   </div>
+  </section>
+
+  <section id="view-goc" hidden>
+    <div class="goc-bar">
+      <span><b>GOC 奇术终端 · 训练模式</b>（含 4 关考试 / 小题特训 / 本地最佳计时 · 排队挤服期间可在后台保持自动抢位）</span>
+      <div class="grow"></div>
+      <a class="btn-ghost btn-link btn-sm" href="./goc.html" target="_blank" rel="noopener">新窗口打开</a>
+      <button class="btn-ghost btn-sm" id="btn-goc-back" type="button">返回服务器列表</button>
+    </div>
+    <div class="goc-wrap">
+      <iframe id="goc-frame" title="GOC 奇术终端 · 训练模式" loading="lazy"></iframe>
+    </div>
+  </section>
 
 </div>
 
@@ -1421,7 +1471,43 @@ $("dlg-rounds-save").onclick = () => {
 $("btn-about").onclick = () => $("dlg-about").showModal();
 $("dlg-about-ok").onclick = () => $("dlg-about").close();
 
+function switchView(view, updateHash = true) {
+  const isGoc = view === "goc";
+  $("view-servers").hidden = isGoc;
+  $("view-goc").hidden = !isGoc;
+  $("tab-servers").classList.toggle("active", !isGoc);
+  $("tab-servers").setAttribute("aria-selected", String(!isGoc));
+  $("tab-goc").classList.toggle("active", isGoc);
+  $("tab-goc").setAttribute("aria-selected", String(isGoc));
+  if (isGoc) {
+    const frame = $("goc-frame");
+    if (!frame.dataset.loaded) {
+      frame.dataset.loaded = "1";
+      frame.src = "./goc.html?embed=1";
+    }
+  }
+  if (updateHash && typeof history?.replaceState === "function") {
+    const targetHash = isGoc ? "#goc" : "";
+    if ((location.hash || "") !== targetHash) {
+      history.replaceState(null, "", location.pathname + location.search + targetHash);
+    }
+  }
+}
+
+$("tab-servers").onclick = () => switchView("servers");
+$("tab-goc").onclick = () => switchView("goc");
+$("btn-goc-back").onclick = () => switchView("servers");
+
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin) return;
+  const msg = e.data;
+  if (msg && msg.type === "neoprobe-goc-height" && typeof msg.height === "number" && msg.height > 200) {
+    $("goc-frame").style.height = Math.ceil(msg.height) + "px";
+  }
+});
+
 document.addEventListener("keydown", (e) => {
+  if ($("view-servers").hidden) return;
   if (e.key === "Escape" && state.openKey) { state.openKey = null; render(); }
   if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
     e.preventDefault();
@@ -1430,9 +1516,19 @@ document.addEventListener("keydown", (e) => {
 });
 
 (function initOpenFromHash() {
-  const m = /(?:^|#|&)open=([^&]+)/.exec(location.hash || "");
+  const h = location.hash || "";
+  if (h === "#goc" || h.startsWith("#goc&")) {
+    switchView("goc", false);
+    return;
+  }
+  const m = /(?:^|#|&)open=([^&]+)/.exec(h);
   if (m) { try { state.openKey = decodeURIComponent(m[1]); } catch (e) { /* ignore */ } }
 })();
+
+window.addEventListener("hashchange", () => {
+  const h = location.hash || "";
+  switchView(h === "#goc" || h.startsWith("#goc&") ? "goc" : "servers", false);
+});
 
 // 启动加载：先读静态快照，再直连 status.php；若已配置本机桥接则同步拉取实时状态
 fetchSnapshot(false);
