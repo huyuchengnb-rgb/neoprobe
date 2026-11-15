@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeoProbe · 服务器探测</title>
+<style>
+  :root{
+    --bg:#f7f8fc; --panel:#ffffff; --panel2:#fbfbfe;
+    --ink:#1d1f2b; --ink2:#4a4e63; --ink3:#7b8199;
+    --line:#e6e8f2; --line2:#d8dcec;
+    --accent:#5b4bd6; --accent2:#7a68f0; --accentbg:#efedff;
+    --ok:#1f7a4d; --okbg:#e8f6ee;
+    --warn:#b7791f; --warnbg:#fdf4e3;
+    --bad:#c0392b; --badbg:#fdecea;
+    --mono:"Cascadia Mono",Consolas,"SF Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+    font-size:14px;line-height:1.6;
+  }
+  .app{max-width:1280px;margin:0 auto;padding:22px 24px 60px}
+
+  /* ---------- 顶栏 ---------- */
+  .top{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .logo{
+    width:38px;height:38px;border-radius:10px;flex:none;
+    background:linear-gradient(140deg,#6756e0,#8d7bf5);
+    box-shadow:0 4px 12px rgba(103,86,224,.28);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .logo svg{width:21px;height:21px}
+  h1{margin:0;font-size:19px;letter-spacing:.3px}
+  .sub{color:var(--ink3);font-size:12.5px;margin-top:1px}
+  .stats{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
+  .stat{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:8px 15px;min-width:92px;
+  }
+  .stat b{display:block;font-size:19px;line-height:1.25;font-family:var(--mono)}
+  .stat span{color:var(--ink3);font-size:11.5px}
+
+  /* ---------- 工具条 ---------- */
+  .bar{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  input[type=text],select{
+    font-family:inherit;font-size:13.5px;color:var(--ink);
+    background:var(--panel2);border:1px solid var(--line2);border-radius:8px;
+    padding:8px 12px;outline:none;transition:.15s;
+  }
+  input[type=text]:focus,select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(122,104,240,.14)}
+  #addr{flex:1 1 280px;min-width:200px;font-family:var(--mono)}
+  #filter{flex:0 1 170px}
+  button{
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    border-radius:8px;padding:8px 15px;border:1px solid transparent;transition:.15s;
+  }
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent2)}
+  .btn-ghost{background:var(--panel2);color:var(--ink2);border-color:var(--line2)}
+  .btn-ghost:hover{background:var(--accentbg);color:var(--accent);border-color:#c9c2f8}
+  .btn-sm{padding:4px 10px;font-size:12px;font-weight:500}
+  .grow{flex:1}
+
+  /* ---------- 列表 ---------- */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:560px;table-layout:auto}
+  thead th{
+    text-align:left;font-size:11.5px;font-weight:700;color:var(--ink3);
+    letter-spacing:.6px;text-transform:uppercase;
+    padding:11px 14px;background:var(--panel2);border-bottom:1px solid var(--line);
+    cursor:pointer;user-select:none;white-space:nowrap;
+  }
+  thead th:hover{color:var(--accent)}
+  thead th.sorted{color:var(--accent)}
+  tbody tr.row{border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  tbody tr.row:hover{background:#faf9ff}
+  tbody tr.row.open{background:var(--accentbg)}
+  tbody tr.row.offline{background:#fffdfdfb}
+  td{padding:11px 14px;vertical-align:middle}
+  .name{font-weight:600;max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .name-addr{display:none;font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .addr{font-family:var(--mono);font-size:12.5px;color:var(--ink2);white-space:nowrap}
+  .map{font-family:var(--mono);font-size:12.5px;color:var(--ink2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .num{font-family:var(--mono);font-size:13px}
+  .muted{color:var(--ink3)}
+  .pill{
+    display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;
+    font-weight:600;letter-spacing:.2px;
+  }
+  .pill-ok{background:var(--okbg);color:var(--ok)}
+  .pill-bad{background:var(--badbg);color:var(--bad)}
+  .pill-wait{background:var(--warnbg);color:var(--warn)}
+  .pill-mode{background:var(--accentbg);color:var(--accent);font-family:var(--mono);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
+  .bar-wrap{display:flex;align-items:center;gap:7px}
+  .meter{width:52px;height:5px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+  .meter i{display:block;height:100%;border-radius:3px;background:var(--accent2)}
+  .lat{font-family:var(--mono);font-size:12.5px;width:52px;text-align:right}
+  .lat.good{color:var(--ok)} .lat.mid{color:var(--warn)} .lat.bad{color:var(--bad)}
+  .actions{white-space:nowrap;text-align:right}
+  .actions button{opacity:.55;transition:.15s}
+  tr:hover .actions button{opacity:1}
+
+  /* ---------- 详情 ---------- */
+  tr.detail>td{background:var(--panel2);padding:0;border-bottom:1px solid var(--line)}
+  .detail-inner{padding:16px 18px;display:grid;grid-template-columns:1.15fr 1fr;gap:20px}
+  @media(max-width:900px){.detail-inner{grid-template-columns:1fr}}
+  .dsec h4{
+    margin:0 0 9px;font-size:12px;color:var(--ink3);font-weight:700;
+    letter-spacing:.7px;text-transform:uppercase;display:flex;align-items:center;gap:8px;
+  }
+  .dsec h4 .cnt{background:var(--accentbg);color:var(--accent);border-radius:10px;padding:0 7px;font-size:11px}
+  .players{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .prow{display:grid;grid-template-columns:26px 1fr 48px 56px;gap:8px;padding:6px 10px;font-size:12.5px;border-bottom:1px solid #f2f3f9}
+  .prow:last-child{border-bottom:none}
+  .prow .idx{color:var(--ink3);font-family:var(--mono);text-align:right}
+  .prow .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .pscore,.prow .ptime{font-family:var(--mono);text-align:right;color:var(--ink2)}
+  .phead,.rhead{
+    position:sticky;top:0;z-index:1;background:var(--panel2);
+    font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--ink3);
+    text-transform:uppercase;border-bottom:1px solid var(--line);
+  }
+  .phead{display:grid;grid-template-columns:26px 1fr 48px 56px;gap:8px;padding:5px 10px}
+  .rhead{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:5px 10px}
+  .phead .r,.rhead .r{text-align:right}
+  .rules{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .rrow{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:5px 10px;font-size:12px;border-bottom:1px solid #f2f3f9}
+  .rrow:last-child{border-bottom:none}
+  .rk{font-family:var(--mono);color:var(--ink3);overflow:hidden;text-overflow:ellipsis}
+  .rv{font-family:var(--mono);color:var(--ink2);word-break:break-all}
+  .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 18px;margin-top:12px;font-size:12.5px}
+  .kv div span{color:var(--ink3);display:block;font-size:11px}
+  .kv div b{font-weight:600;font-family:var(--mono);font-size:12.5px}
+  .dnote{grid-column:1/-1;color:var(--ink3);font-size:12.5px;padding:8px 0 0}
+
+  /* ---------- 空态 / toast ---------- */
+  .empty{padding:52px 20px;text-align:center;color:var(--ink3)}
+  .empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:6px}
+  .empty code{background:var(--accentbg);color:var(--accent);padding:2px 7px;border-radius:5px;font-family:var(--mono);font-size:12.5px}
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
+    background:#251f4a;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.22s;box-shadow:0 8px 24px rgba(20,16,50,.28);z-index:99;
+  }
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  .dot.live{background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.18)}
+  .dot.pause{background:#b0b6cc}
+  textarea{
+    width:100%;min-height:120px;font-family:var(--mono);font-size:12.5px;
+    border:1px solid var(--line2);border-radius:8px;padding:10px;background:var(--panel2);
+    outline:none;resize:vertical;color:var(--ink)
+  }
+  dialog{
+    border:none;border-radius:14px;padding:0;box-shadow:0 20px 60px rgba(20,16,50,.2);
+    max-width:520px;width:92%;
+  }
+  dialog::backdrop{background:rgba(24,20,48,.32)}
+  .dlg-h{padding:18px 20px 0;font-size:15px;font-weight:700}
+  .dlg-b{padding:12px 20px}
+  .dlg-f{padding:0 20px 18px;display:flex;gap:9px;justify-content:flex-end}
+
+  /* ---------- 身份 / VIP ---------- */
+  .vip-chip{
+    display:flex;align-items:center;gap:7px;font:inherit;font-size:12px;color:var(--ink3);
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel2);
+    cursor:pointer;white-space:nowrap;
+  }
+  .vip-chip:hover{border-color:#c9c2f8;color:var(--accent)}
+  .vip-chip.is-vip{border-color:#bfe3cd;background:#f3fbf6;color:#1f7a4d}
+  .vip-chip.is-vip:hover{border-color:#8fd0aa}
+  .vip-chip b{font-weight:600;font-size:12px}
+  .vip-chip .days{font-family:var(--mono);font-size:11.5px;opacity:.85}
+  .vip-panel{
+    border:1px solid var(--line);border-radius:10px;background:var(--panel);
+    padding:11px 14px;margin:0 0 10px;display:grid;gap:8px 22px;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  }
+  .vip-panel[hidden]{display:none}
+  .vip-panel .item span{display:block;color:var(--ink3);font-size:11px;margin-bottom:2px}
+  .vip-panel .item b{font-family:var(--mono);font-size:13px;font-weight:600}
+  .vip-panel .item b.plain{font-family:inherit;font-weight:600}
+  .vip-panel .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    border-top:1px dashed var(--line);padding-top:9px;margin-top:2px}
+  .vip-panel .acts button{
+    background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 10px;
+    font-size:12px;cursor:pointer;color:var(--ink2);
+  }
+  .vip-panel .acts button:hover{border-color:#c9c2f8;color:var(--accent)}
+  .vip-panel .hint{color:var(--ink3);font-size:11.5px;margin-left:auto}
+
+  /* ---------- 自动挤服 ---------- */
+  .btn-queue{
+    background:#c2761f;color:#fff;border:1px solid #c2761f;
+    padding:4px 10px;font-size:12px;border-radius:7px;cursor:pointer;
+    font-weight:600;white-space:nowrap;
+  }
+  .btn-queue:hover{background:#d98a2b;border-color:#d98a2b}
+  .btn-queued{
+    background:#fff4e3;color:#a35c12;border-color:#f0cfa2;
+    animation:pulseq 1.6s ease-in-out infinite;
+  }
+  @keyframes pulseq{0%,100%{box-shadow:0 0 0 0 rgba(194,118,31,.28)}50%{box-shadow:0 0 0 5px rgba(194,118,31,0)}}
+  .queue-banner{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    border:1px solid #f0cfa2;background:linear-gradient(90deg,#fff8ee,#fffdf9);
+    border-radius:10px;padding:9px 13px;margin:0 0 10px;font-size:13px;
+  }
+  .queue-banner.ok{border-color:#bfe3cd;background:linear-gradient(90deg,#f1fbf5,#fbfffd)}
+  .queue-banner.bad{border-color:#f2c4bd;background:linear-gradient(90deg,#fdf2f0,#fffbfa)}
+  .queue-banner .qb-main{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .queue-banner .qb-meta{color:var(--ink3);font-size:12px;font-family:var(--mono)}
+  .queue-banner .qb-hint{color:#a35c12;font-size:12px}
+  .queue-banner .grow{flex:1 1 80px}
+  @media(max-width:860px){ .queue-banner .qb-hint{display:none} }
+  .queue-banner button{
+    background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 10px;
+    font-size:12px;cursor:pointer;color:var(--ink2);
+  }
+  .queue-banner button:hover{border-color:#d8a86b;color:#a35c12}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid #e8c79b;
+    border-top-color:#c2761f;border-radius:50%;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- 回合 / 启动游戏 ---------- */
+  .round-cell{display:flex;flex-direction:column;gap:1px;line-height:1.3}
+  .round-time{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:.3px}
+  .round-time.muted{color:var(--ink3);font-weight:400}
+  .round-time.cd-done{color:var(--warn)}
+  .round-meta{font-size:11px;color:var(--ink3);white-space:nowrap;display:flex;align-items:center;gap:5px}
+  .pill-phase{background:#eef0fb;color:#4b5390;font-size:10.5px;padding:1px 6px;border-radius:9px;font-weight:600}
+  /* 本机客户端实测的标记：和服端接口数据视觉上区分开 */
+  .tag-local{background:#e8f5ec;color:#1c7a3e;font-size:10.5px;padding:1px 6px;border-radius:9px;font-weight:600;margin-left:4px}
+  .mono-sm{font-family:var(--mono);font-size:11.5px;font-weight:600}
+  .game-chip{
+    display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink3);
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel2);
+    cursor:pointer;max-width:280px;
+  }
+  .game-chip:hover{border-color:#c9c2f8;color:var(--accent)}
+  .game-chip b{font-family:var(--mono);font-size:11.5px;color:var(--ink2);font-weight:600;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  .btn-launch{background:#1f7a4d;color:#fff}
+  .btn-launch:hover{background:#25925c}
+  .btn-mini{padding:4px 9px;font-size:12px}
+  .dsec .round-box{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 16px;
+    border:1px solid var(--line);border-radius:8px;padding:11px 13px;background:#fff}
+  .round-box div span{color:var(--ink3);font-size:11px;display:block}
+  .round-box div b{font-family:var(--mono);font-size:14px;font-weight:600}
+  .round-box div b.big{font-size:16px;color:var(--accent)}
+  /* "未上报 / —" 这类占位不是数据，别用强调色，否则看着像真的倒计时 */
+  .round-box div b.big.muted{color:var(--ink3);font-weight:500}
+
+  /* ---------- 响应式：按宽度逐步收起次要列 ---------- */
+  @media(max-width:1400px){
+    .name{max-width:290px}
+  }
+  @media(max-width:1240px){
+    .col-addr{display:none}
+    .name-addr{display:block}
+    .name{max-width:250px}
+  }
+  @media(max-width:1080px){
+    .col-map{display:none}
+    .col-copy{display:none}
+    #addr{flex:1 1 100%}
+  }
+  @media(max-width:920px){
+    .col-mode{display:none}
+    .name{max-width:230px}
+    .actions button{padding:4px 7px}
+  }
+  @media(max-width:780px){
+    .col-lat{display:none}
+    .name{max-width:220px}
+  }
+  @media(max-width:660px){
+    /* 回合列不隐藏：它是最有价值的一列，宁可让表格横向滚动（.table-wrap 已有 overflow-x:auto），
+       也不要在窄面板里直接把"回合数 / 剩余时间"整列抹掉。 */
+    .col-round{display:table-cell}
+    .app{padding:16px 12px 50px}
+    .stats{width:100%;margin-left:0}
+    .stat{flex:1;min-width:0}
+    td{padding:9px 9px}
+    thead th{padding:9px 9px}
+    .actions button{padding:3px 5px;font-size:11px}
+    .name{max-width:190px}
+    .meter{width:34px}
+  }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/><path d="M11 8v6M8 11h6" stroke-width="1.6"/>
+        </svg>
+      </div>
+      <div>
+        <h1>NeoProbe</h1>
+        <div class="sub">Garry's Mod / Source 服务器探测 · 任意地址</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="s-online">0</b><span>在线</span></div>
+      <div class="stat"><b id="s-total">0</b><span>监视中</span></div>
+      <div class="stat"><b id="s-players">0</b><span>总玩家</span></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <input id="addr" type="text" placeholder="输入任意服务器地址，如 1.2.3.4:27015 / play.example.com:27015 / steam://connect/1.2.3.4:27015" autocomplete="off">
+    <button class="btn-primary" id="btn-add">添加并查询</button>
+    <button class="btn-ghost" id="btn-bulk">批量添加</button>
+    <div class="grow"></div>
+    <button class="vip-chip" id="vip-chip" type="button" title="点击查看身份详情">
+      <b id="vip-text">身份…</b>
+    </button>
+    <div class="game-chip" id="game-chip" title="点击设置 Garry's Mod 路径">
+      <span class="dot pause" id="game-dot"></span>
+      <b id="game-text">检测中…</b>
+    </div>
+    <div class="game-chip" id="probe-chip" title="本机客户端回合探针">
+      <span class="dot pause" id="probe-dot"></span>
+      <b id="probe-text">探针待用</b>
+    </div>
+    <button class="btn-launch" id="btn-launch">启动游戏</button>
+    <input id="filter" type="text" placeholder="过滤名称 / 地图 / 地址" autocomplete="off">
+    <select id="interval" title="自动刷新间隔">
+      <option value="5">每 5 秒</option>
+      <option value="10">每 10 秒</option>
+      <option value="15" selected>每 15 秒</option>
+      <option value="30">每 30 秒</option>
+      <option value="60">每 60 秒</option>
+    </select>
+    <button class="btn-ghost" id="btn-auto">暂停</button>
+    <button class="btn-ghost" id="btn-refresh">全部刷新</button>
+  </div>
+
+  <div id="vip-panel" class="vip-panel" hidden></div>
+  <div id="queue-banner" hidden></div>
+
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="name">服务器</th>
+            <th data-sort="map" class="col-map">地图</th>
+            <th data-sort="rounds" class="col-round">回合 / 空位</th>
+            <th data-sort="players">人数</th>
+            <th data-sort="rtt" class="col-lat">延迟</th>
+            <th data-sort="mode" class="col-mode">模式</th>
+            <th data-sort="address" class="col-addr">地址</th>
+            <th style="text-align:right">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" hidden>
+      <b>还没有监视任何服务器</b>
+      在上方输入地址后回车即可添加，例如 <code>127.0.0.1:27015</code><br>
+      <span style="font-size:12.5px">支持 IP、域名、IPv6（<code>[::1]:27015</code>）与 <code>steam://connect/</code> 链接</span>
+    </div>
+  </div>
+
+</div>
+
+<dialog id="dlg-bulk">
+  <div class="dlg-h">批量添加</div>
+  <div class="dlg-b">
+    <div class="sub" style="margin-bottom:8px">每行一个地址，也支持逗号分隔；重复项会自动跳过。</div>
+    <textarea id="bulk-text" placeholder="1.2.3.4:27015&#10;play.example.com:27015&#10;[2001:db8::1]:27015"></textarea>
+  </div>
+  <div class="dlg-f">
+    <button class="btn-ghost" onclick="document.getElementById('dlg-bulk').close()">取消</button>
+    <button class="btn-primary" id="btn-bulk-ok">添加</button>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+<div id="err" style="display:none;position:fixed;left:12px;bottom:12px;right:12px;max-height:30vh;overflow:auto;
+  background:#fdecea;color:#a3281b;border:1px solid #f5c6c0;border-radius:8px;padding:10px 12px;
+  font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;z-index:100"></div>
+<script>
+window.addEventListener("error", function (ev) {
+  var el = document.getElementById("err");
+  if (!el) return;
+  el.style.display = "block";
+  el.textContent += "JS 错误: " + ev.message + "  @" + (ev.filename||"").split("/").pop() + ":" + ev.lineno + "\n";
+});
+</script>
+
+<script>
+"use strict";
+
+const state = {
+  servers: [],
+  roundsMeta: null,
+  game: null,
+  queue: null,
+  vip: null,
+  vipOpen: false,
+  rev: null,
+  sortKey: "name",
+  sortDir: 1,
+  openKey: null,
+  details: new Map(),   // key -> {ts, data}
+  detailBusy: new Set(),
+  interval: 15,
+  auto: true,
+};
+
+const $ = (id) => document.getElementById(id);
+
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove("on"), 1900);
+}
+
+async function api(path, body) {
+  const opt = body === undefined
+    ? { method: "GET" }
+    : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const res = await fetch(path, opt);
+  const txt = await res.text();
+  try { return JSON.parse(txt); } catch { return { ok: false, error: txt.slice(0, 200) }; }
+}
+
+/* ---------------- 身份 / VIP ---------------- */
+function vipBadge(v) {
+  if (!v) return { cls: "", text: "身份…", title: "正在查询 Steam 身份" };
+  if (!v.ok) {
+    return { cls: "", text: "身份未知", title: v.error || "查询失败" };
+  }
+  const admin = v.is_admin ? " · 管理员" : "";
+  if (v.is_vip) {
+    const d = v.days_left;
+    return {
+      cls: "is-vip",
+      text: d != null ? `VIP · 剩 ${d} 天` : "VIP",
+      title: d != null
+        ? `VIP${admin} · 到期 ${fmtDate(v.expire_at)}`
+        : `VIP${admin} · 服务端未提供到期时间`,
+    };
+  }
+  return { cls: "", text: "普通用户" + admin, title: v.identity || "非 VIP" };
+}
+
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = new Date(ts * 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function renderVip() {
+  const v = state.vip;
+  const chip = $("vip-chip");
+  const badge = vipBadge(v);
+  chip.className = "vip-chip " + badge.cls;
+  chip.title = badge.title + "（点击查看详情）";
+  $("vip-text").textContent = badge.text;
+
+  const panel = $("vip-panel");
+  if (!state.vipOpen) { panel.hidden = true; panel.innerHTML = ""; return; }
+  panel.hidden = false;
+
+  if (!v) { panel.innerHTML = `<div class="item"><span>身份</span><b class="plain">查询中…</b></div>`; return; }
+  if (!v.ok) {
+    panel.innerHTML = `
+      <div class="item"><span>状态</span><b class="plain" style="color:#a3281b">${esc(v.error || "查询失败")}</b></div>
+      <div class="item"><span>Steam 账号</span><b>${esc(v.account_source || "未找到")}</b></div>
+      <div class="acts"><button data-vip="refresh">重试</button></div>`;
+    return;
+  }
+
+  const days = v.days_left;
+  const daysText = days == null ? "—" : `${days} 天`;
+  const expire = v.expire_at ? fmtDate(v.expire_at) : "服务端未提供";
+  const srcNote = v.expire_source ? `（${v.expire_source}）` : "";
+  const checked = v.checked_at ? new Date(v.checked_at * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—";
+
+  panel.innerHTML = `
+    <div class="item"><span>身份</span><b class="plain" style="${v.is_vip ? "color:#1f7a4d" : ""}">
+      ${esc(v.identity || (v.is_vip ? "VIP" : "普通用户"))}${v.is_admin ? " · 管理员" : ""}</b></div>
+    <div class="item"><span>是否 VIP</span><b class="plain">${v.is_vip ? "是" : "否"}</b></div>
+    <div class="item"><span>到期时间</span><b>${esc(expire)}</b>${srcNote ? `<span style="display:inline;color:var(--ink3);font-size:11px">${esc(srcNote)}</span>` : ""}</div>
+    <div class="item"><span>剩余天数</span><b style="${days != null && days <= 7 ? "color:#c2761f" : ""}">${esc(daysText)}</b></div>
+    <div class="item"><span>SteamID</span><b>${esc(v.steamid64 || "—")}</b>
+      <span style="display:inline;color:var(--ink3);font-size:11px">${esc(v.account_source || "")}</span></div>
+    <div class="item"><span>查询时间</span><b>${esc(checked)}</b></div>
+    <div class="item"><span>身份接口</span><b style="font-size:11.5px">${esc(v.api_url || "—")}</b></div>
+    <div class="acts">
+      <button data-vip="refresh">刷新</button>
+      <button data-vip="expire">${v.manual_expire ? "改本地到期日" : "登记本地到期日"}</button>
+      <button data-vip="api">设置身份接口</button>
+      ${v.manual_expire ? `<button data-vip="clear">清除本地日期</button>` : ""}
+      <span class="hint">${v.source === "manual" ? "到期日来自本地记录，非服务器数据" : "身份数据来自 identity.php"}</span>
+    </div>`;
+}
+
+async function refreshVip() {
+  const r = await api("/api/vip?refresh=1");
+  if (r.vip) { state.vip = r.vip; renderVip(); }
+  toast(r.ok ? "身份已刷新" : (r.error || "查询失败"));
+}
+
+async function clearVipExpire() {
+  const r = await api("/api/vip/expire", { date: "" });
+  if (r.ok) { state.vip = r.vip; renderVip(); toast("已清除本地到期日"); }
+  else toast(r.error || "清除失败");
+}
+
+async function setVipApi() {
+  const cur = (state.vip && state.vip.api_url) || "";
+  const text = window.prompt(
+    "身份接口地址（返回 JSON，含 identity / is_vip，可选 vip_expire、days_left 等字段）：\n留空 = 用默认 identity.php",
+    cur);
+  if (text === null) return;
+  const r = await api("/api/config", { vip_api: text.trim() });
+  if (r.ok) {
+    toast("已更新接口，正在重新查询");
+    const v = await api("/api/vip?refresh=1");
+    if (v.vip) { state.vip = v.vip; renderVip(); }
+  } else toast(r.error || "保存失败");
+}
+
+async function setVipExpire() {
+  const cur = (state.vip && state.vip.manual_expire) || "";
+  const text = window.prompt("登记本地到期日（格式 2026-12-01，留空 = 清除）：", cur || "");
+  if (text === null) return;
+  const r = await api("/api/vip/expire", { date: text.trim() });
+  if (r.ok) {
+    state.vip = r.vip;
+    renderVip();
+    toast(text.trim() ? "已登记本地到期日" : "已清除本地到期日");
+  } else {
+    toast(r.error || "保存失败");
+  }
+}
+
+$("vip-chip").onclick = () => {
+  state.vipOpen = !state.vipOpen;
+  renderVip();
+};
+
+$("vip-panel").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-vip]");
+  if (!btn) return;
+  const act = btn.dataset.vip;
+  if (act === "refresh") refreshVip();
+  else if (act === "expire") setVipExpire();
+  else if (act === "clear") clearVipExpire();
+  else if (act === "api") setVipApi();
+});
+
+/* ---------------- 渲染 ---------------- */
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function fmtSec(sec) {
+  if (sec == null || sec < 0) return "—";
+  const s = Math.max(0, Math.round(sec));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h ? `${h}:${pad(m)}:${pad(ss)}` : `${pad(m)}:${pad(ss)}`;
+}
+
+/* 空位观测的展示工具。挤服只需要知道"多久空一次、下次大概什么时候"。 */
+function fmtSpan(sec) {
+  if (sec == null || !isFinite(sec)) return "—";
+  if (sec < 90) return Math.round(sec) + " 秒";
+  if (sec < 5400) return (sec / 60).toFixed(sec < 600 ? 1 : 0) + " 分钟";
+  return (sec / 3600).toFixed(1) + " 小时";
+}
+
+function slotsSign(sl) {
+  if (!sl) return null;
+  if (sl.free_events > 0) return "free";
+  if (sl.samples >= 3) return "quiet";
+  return null;
+}
+
+function roundCellSlots(sl, mi) {
+  const kind = slotsSign(sl);
+  if (kind === "free") {
+    const ago = sl.since_last_free != null ? fmtSpan(sl.since_last_free) + "前" : "—";
+    const avg = sl.avg_gap ? `均 ${fmtSpan(sl.avg_gap)}/次` : `近${Math.round(sl.window / 60)}分钟 ${sl.free_events} 次`;
+    return `<td class="col-round" title="空位观测：每 20 秒比对一次玩家名单，统计真实空位"><div class="round-cell">
+      <div><span class="round-time">${ago}</span></div>
+      <div class="round-meta"><span class="pill-phase">空位</span>${avg}</div>
+    </div></td>`;
+  }
+  // 没有空位事件，但地图在换：本图已持续多久 + 历史平均每张图多久
+  if (mi && mi.since != null && mi.spans >= 1) {
+    const avg = mi.avg_duration ? `均 ${fmtSpan(mi.avg_duration)}/张` : `${mi.changes} 次换图`;
+    return `<td class="col-round" title="换图观测：地图变了说明这一局翻篇（实测 A2S 地图字段）"><div class="round-cell">
+      <div><span class="round-time">${fmtSpan(mi.since)}</span></div>
+      <div class="round-meta"><span class="pill-phase">本图</span>${avg}</div>
+    </div></td>`;
+  }
+  if (mi && mi.since != null) {
+    return `<td class="col-round" title="刚观测到地图，还没有换图记录"><div class="round-cell">
+      <div><span class="round-time">${fmtSpan(mi.since)}</span></div>
+      <div class="round-meta"><span class="muted" style="font-size:11px">本图 · 无换图记录</span></div>
+    </div></td>`;
+  }
+  if (!sl) return null;
+  const mins = Math.max(1, Math.round(sl.since_start / 60));
+  if (sl.since_start < 300) {
+    // 才看了一两分钟，说"没有空位"等于编结论；老实写"观测中"
+    return `<td class="col-round" title="刚开始观测，样本还不足以判断空位节奏"><div class="round-cell">
+      <div><span class="round-time muted">—</span></div>
+      <div class="round-meta"><span class="muted" style="font-size:11px">观测中 ${mins}分钟</span></div>
+    </div></td>`;
+  }
+  return `<td class="col-round" title="已连续观测 ${mins} 分钟，这段时间没有人离开"><div class="round-cell">
+    <div><span class="round-time muted">—</span></div>
+    <div class="round-meta"><span class="muted" style="font-size:11px">${mins}分钟无空位</span></div>
+  </div></td>`;
+}
+
+/* 回合列。
+   注意：接口返回 rounds_left=-1 只代表"没上报"，不代表"空闲"或"没在对局"。
+   实测这台兑换服接口每 5 秒刷新一次、回合字段却恒为 -1，而服务器里明明在打，
+   所以绝不能把 -1 翻译成"空闲"——那是替服务器下结论。 */
+function roundCell(s) {
+  /* 优先用本机客户端的实测值：那是唯一在你正在玩的那台服上真实存在的回合数据 */
+  const c = s.client;
+  if (c && (c.left != null || c.phase)) {
+    const cd = c.left != null
+      ? `<span class="round-time" data-cd="${c.left}" data-ts="${c.ts}">${fmtSec(c.left)}</span>`
+      : `<span class="round-time muted">—</span>`;
+    const ph = c.phase ? `<span class="pill-phase">${esc(c.phase)}</span>` : "";
+    return `<td class="col-round" title="数据来自本机游戏客户端（${esc(c.key || "—")}），不是服端接口">
+      <div class="round-cell">
+      <div>${cd}</div>
+      <div class="round-meta">${ph}<span class="tag-local">本机</span></div>
+    </div></td>`;
+  }
+
+  const r = s.rounds;
+  const hasData = r && (r.rounds_left != null || r.time_left != null);
+
+  if (!hasData && r && r.phase) {
+    // 接口收录了这台服、但当前没有剩余局数/剩余时间——比如兑换服正处在空闲
+    const idle = /空闲|等待|idle|wait/i.test(r.phase);
+    return `<td class="col-round" title="接口自报：${esc(r.phase)}"><div class="round-cell">
+      <div><span class="round-time muted">—</span></div>
+      <div class="round-meta"><span class="pill-phase">${esc(r.phase)}</span><span class="muted" style="font-size:11px">${idle ? "无对局" : "无剩余数据"}</span></div>
+    </div></td>`;
+  }
+
+  if (!hasData) {
+    // 没有回合数据时，对挤服真正有用的是"多久空一次位"——这是实测出来的
+    const slCell = roundCellSlots(s.slots, s.mapinfo);
+    if (slCell) return slCell;
+    const why = !r
+      ? "回合接口里没有这台服务器：status.php 目前只收录 202.189.21.228 上的 3 台测试服和兑换服，6 台 mio 正式服都没有上报"
+      : "该服未向接口上报回合进度：回合字段恒为 -1（接口本身在正常刷新）";
+    return `<td class="col-round" title="${esc(why)}"><div class="round-cell">
+      <div><span class="round-time muted">—</span></div>
+      <div class="round-meta"><span class="muted" style="font-size:11px">未上报</span></div>
+    </div></td>`;
+  }
+
+  const cd = r.timer === "expired"
+    ? `<span class="round-time" style="color:var(--warn)" title="接口仍报“回合中”，但倒计时已归零：回合还在打，只是不知道还剩多久（实测这种状态可持续数分钟）">计时归零</span>`
+    : r.time_left != null
+    ? `<span class="round-time" data-cd="${r.time_left}" data-ts="${r.synced_at}">${fmtSec(r.time_left)}</span>`
+    : `<span class="round-time muted">—</span>`;
+  const rounds = r.rounds_left != null ? `剩 ${r.rounds_left} 局` : "局数未知";
+  const stale = r.stale ? ` <span class="muted" title="数据超过 2 分钟未更新">·</span>` : "";
+  return `<td class="col-round"><div class="round-cell">
+    <div>${cd}</div>
+    <div class="round-meta"><span class="pill-phase">${esc(r.phase)}</span>${rounds}${stale}</div>
+  </div></td>`;
+}
+
+function latClass(rtt) {
+  if (rtt == null) return "";
+  if (rtt < 60) return "good";
+  if (rtt < 150) return "mid";
+  return "bad";
+}
+
+function gamemode(s) {
+  const i = s.info || {};
+  const tags = (i.tags || "").split(/\s+/);
+  for (const t of tags) {
+    const m = /^(gm|gamemode):(.+)$/i.exec(t);
+    if (m) return m[2];
+  }
+  return i.folder || i.game || "—";
+}
+
+function sortVal(s, key) {
+  const i = s.info || {};
+  switch (key) {
+    case "name": return (i.name || s.address).toLowerCase();
+    case "map": return (i.map || "").toLowerCase();
+    case "rounds": return s.rounds && s.rounds.rounds_left != null ? s.rounds.rounds_left : -1;
+    case "players": return i.players ?? -1;
+    case "rtt": return s.rtt_ms ?? 9e9;
+    case "mode": return gamemode(s).toLowerCase();
+    case "address": return s.address.toLowerCase();
+    default: return 0;
+  }
+}
+
+function visibleServers() {
+  const f = $("filter").value.trim().toLowerCase();
+  let list = state.servers.slice();
+  if (f) {
+    list = list.filter((s) => {
+      const i = s.info || {};
+      return (s.address + " " + (i.name || "") + " " + (i.map || "") + " " + gamemode(s))
+        .toLowerCase().includes(f);
+    });
+  }
+  const k = state.sortKey, d = state.sortDir;
+  list.sort((a, b) => {
+    const va = sortVal(a, k), vb = sortVal(b, k);
+    if (va < vb) return -1 * d;
+    if (va > vb) return 1 * d;
+    return a.address.localeCompare(b.address);
+  });
+  return list;
+}
+
+function rowHtml(s) {
+  const i = s.info || {};
+  const key = s.address;
+  const online = s.state === "ok";
+  const players = i.players ?? 0;
+  const max = i.max_players ?? 0;
+  const pct = max > 0 ? Math.min(100, Math.round(players / max * 100)) : 0;
+  const rtt = s.rtt_ms;
+  const statusPill = online
+    ? `<span class="pill pill-ok">在线</span>`
+    : s.state === "querying" || s.state === "pending"
+      ? `<span class="pill pill-wait">查询中</span>`
+      : `<span class="pill pill-bad" title="${esc(s.error || "")}">离线</span>`;
+
+  return `<tr class="row ${online ? "" : "offline"} ${state.openKey === key ? "open" : ""}" data-key="${esc(key)}">
+    <td>
+      <div class="name" title="${esc(i.name || s.address)}">${esc(i.name || (online ? "(无名称)" : s.address))}</div>
+      <div class="name-addr">${esc(s.address)}</div>
+      <div style="margin-top:3px">${statusPill}${online && i.vac === 1 ? ' <span class="pill pill-ok" style="background:#eef2ff;color:#4457c8">VAC</span>' : ""}</div>
+    </td>
+    <td class="map col-map" title="${esc(i.map || "")}">${esc(i.map || "—")}</td>
+    ${roundCell(s)}
+    <td>
+      <div class="bar-wrap">
+        <span class="num">${online ? `${players}<span class="muted">/${max}</span>` : "—"}</span>
+        <span class="meter"><i style="width:${pct}%"></i></span>
+      </div>
+    </td>
+    <td class="col-lat"><span class="lat ${latClass(rtt)}">${rtt != null ? Math.round(rtt) + " ms" : "—"}</span></td>
+    <td class="col-mode"><span class="pill pill-mode" title="${esc(gamemode(s))}">${esc(gamemode(s))}</span></td>
+    <td class="addr col-addr">${esc(s.address)}</td>
+    <td class="actions">
+      ${joinButton(s, online, players, max)}
+      <button class="btn-ghost btn-sm col-copy" data-act="copy" data-key="${esc(key)}" title="复制地址">复制</button>
+      <button class="btn-ghost btn-sm col-refresh" data-act="refresh" data-key="${esc(key)}" title="重新查询">刷新</button>
+      <button class="btn-ghost btn-sm col-remove" data-act="remove" data-key="${esc(key)}" title="移出列表">移除</button>
+    </td>
+  </tr>`;
+}
+
+function joinButton(s, online, players, max) {
+  const key = s.address;
+  const q = state.queue;
+  if (q && q.active && q.address === key) {
+    return `<button class="btn-ghost btn-sm col-join btn-queued" data-act="queue-stop" data-key="${esc(key)}"
+      title="正在自动挤服，点击取消">排队 ${fmtSec(q.elapsed)}</button>`;
+  }
+  if (online && max > 0 && players >= max) {
+    return `<button class="btn-queue btn-sm col-join" data-act="queue" data-key="${esc(key)}"
+      title="服务器已满：持续监视，一有空位就自动进服">挤服</button>`;
+  }
+  return `<button class="btn-ghost btn-sm col-join" data-act="join" data-key="${esc(key)}"
+    title="启动游戏并连接该服务器">进服</button>`;
+}
+
+function renderQueue() {
+  const el = $("queue-banner");
+  const q = state.queue;
+  if (!q) { el.hidden = true; el.innerHTML = ""; return; }
+
+  const name = q.label && q.label !== q.address ? `${q.label} · ` : "";
+  const people = q.players != null ? `${q.players}/${q.max_players ?? "?"}` : "—";
+
+  if (q.active) {
+    el.className = "queue-banner";
+    el.hidden = false;
+    el.innerHTML = `
+      <span class="spin"></span>
+      <span class="qb-main">正在挤服 ${esc(name)}${esc(q.address)}</span>
+      <span class="qb-meta">当前 ${esc(people)} · 已探测 ${q.attempts} 次 · 已等 <span class="qb-time">${fmtSec(q.elapsed)}</span></span>
+      ${q.reserved ? `<span class="qb-hint">该服有预留位，普通玩家可能挤不进</span>` : ""}
+      ${q.last_error ? `<span class="qb-hint" title="${esc(q.last_error)}">探测偶尔失败，继续等待</span>` : ""}
+      <span class="grow"></span>
+      <button data-act="queue-stop">取消排队</button>`;
+    return;
+  }
+
+  if (q.status === "launched") {
+    el.className = "queue-banner ok";
+    el.hidden = false;
+    el.innerHTML = `
+      <span class="qb-main">✓ 抢到空位，已进入 ${esc(name)}${esc(q.address)}</span>
+      <span class="qb-meta">等了 ${fmtSec(q.elapsed)} · 探测 ${q.attempts} 次</span>
+      <span class="grow"></span>
+      <button data-act="queue-dismiss">知道了</button>`;
+    return;
+  }
+
+  if (q.status === "cancelled" || q.status === "failed") {
+    const meta = q.status === "failed"
+      ? esc(q.message || "启动失败")
+      : `等了 ${fmtSec(q.elapsed)} · 探测 ${q.attempts} 次`;
+    el.className = "queue-banner bad";
+    el.hidden = false;
+    el.innerHTML = `
+      <span class="qb-main">${q.status === "failed" ? "× 挤服失败" : "已取消排队"}</span>
+      <span class="qb-meta">${meta}</span>
+      <span class="grow"></span>
+      <button data-act="queue-dismiss">关闭</button>`;
+    return;
+  }
+}
+
+async function startQueue(address) {
+  const row = state.servers.find((x) => x.address === address) || {};
+  const label = row.label || (row.info && row.info.name) || "";
+  toast("已开始挤服，一有空位就自动进入");
+  const r = await api("/api/queue", { address, label });
+  if (!r.ok) { toast(r.error || "挤服启动失败"); return; }
+  if (r.launched) {
+    toast(r.message || "服务器有空位，已启动");
+  }
+  state.queue = r.queue || state.queue;
+  renderQueue();
+  setTimeout(poll, 600);
+}
+
+async function stopQueue() {
+  const r = await api("/api/queue/stop", {});
+  state.queue = r.queue || null;
+  renderQueue();
+  toast("已取消排队");
+  setTimeout(poll, 400);
+}
+
+function detailHtml(s) {
+  const d = state.details.get(s.address);
+  if (!d || !d.ok) {
+    const msg = d && d.error ? esc(d.error) : "正在读取玩家与规则…";
+    const mi = s.mapinfo;
+  let mapBlock = "";
+  if (mi && mi.since != null) {
+    const avg = mi.avg_duration ? fmtSpan(mi.avg_duration) : null;
+    mapBlock = `<div class="dsec">
+      <h4>地图节奏 <span class="cnt">${esc(mi.map)}</span></h4>
+      <div class="round-box">
+        <div><span>本图已持续</span><b class="big">${fmtSpan(mi.since)}</b></div>
+        <div><span>平均每张图</span><b>${avg || "还没有换图记录"}</b></div>
+        <div><span>观测到的换图</span><b>${mi.changes} 次</b></div>
+        <div><span>参考剩余</span><b>${avg ? "约 " + fmtSpan(Math.max(0, mi.avg_duration - mi.since)) : "—"}</b></div>
+        <div style="grid-column:1/-1"><span>说明</span>
+          <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">
+          换图就是上一局翻篇：这是本面板能实测到的、最接近"这局还剩多久"的信号。
+          平均每张图用多久是根据本机观测到的历史换图间隔算的，不是服端配置值；
+          参考剩余 = 平均时长 − 本图已持续，只是估计，标的是"参考"不是倒计时。</b></div>
+      </div>
+    </div>`;
+  }
+
+  return `<tr class="detail"><td colspan="8"><div class="detail-inner">
+      <div class="dnote">${msg}</div></div></td></tr>`;
+  }
+  const i = d.info || {};
+  const players = d.players || [];
+  const rules = d.rules || {};
+
+  const pHead = `<div class="phead"><div class="r">#</div><div>玩家</div><div class="r">分数</div><div class="r">时长</div></div>`;
+  const pRows = players.length
+    ? players.map((p) => `<div class="prow">
+        <div class="idx">${p.index}</div>
+        <div class="pname" title="${esc(p.name)}">${esc(p.name || "(无名)")}</div>
+        <div class="pscore">${p.score}</div>
+        <div class="ptime">${fmtDur(p.duration)}</div>
+      </div>`).join("")
+    : `<div class="prow" style="grid-template-columns:1fr"><div class="pname muted">${
+        d.players_error ? esc(d.players_error) : "没有玩家或服务器未返回玩家列表"}</div></div>`;
+
+  const ruleKeys = Object.keys(rules);
+  const rRows = ruleKeys.length
+    ? ruleKeys.map((k) => `<div class="rrow"><div class="rk" title="${esc(k)}">${esc(k)}</div><div class="rv">${esc(rules[k])}</div></div>`).join("")
+    : `<div class="rrow" style="grid-template-columns:1fr"><div class="rv muted">${
+        d.rules_error ? esc(d.rules_error) : "服务器未返回规则"}</div></div>`;
+
+  const kv = [
+    ["地图", i.map], ["模式", gamemode(s)], ["版本", i.version],
+    ["AppID", i.app_id], ["游戏目录", i.folder], ["平台", i.environment],
+    ["机器人", i.bots], ["可见性", i.visibility === 1 ? "私有" : "公开"],
+    ["标签", i.tags],
+    ["进服命令", `connect ${s.address}`],
+  ].filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== 0);
+
+  // 对局状态（回合数据来自 status.php，本地走秒）
+  const r = s.rounds;
+  // rounds_left < 0 只代表"接口没上报"，不代表"空闲"，更不代表"没在对局"。
+  // 实测：接口每 5 秒刷新一次，这台兑换服的回合字段却恒为 -1，而服务器里明明在打。
+  const hasRound = r && (r.rounds_left != null || r.time_left != null);
+  const cl = s.client;
+  let roundBlock;
+  if (cl && (cl.left != null || cl.phase)) {
+    // 数据来自本机游戏客户端：HUD 倒计时必须靠网络同步，客户端一定知道真实回合状态
+    const upd = cl.ts ? new Date(cl.ts * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—";
+    const cdHtml = cl.left != null
+      ? `<b class="big" data-cd="${cl.left}" data-ts="${cl.ts}">${fmtSec(cl.left)}</b>`
+      : `<b class="big muted">—</b>`;
+    roundBlock = `<div class="round-box">
+      <div><span>回合阶段</span><b>${esc(cl.phase || "—")}</b></div>
+      <div><span>剩余时间</span>${cdHtml}</div>
+      <div><span>数据来源</span><b style="font-family:inherit;font-weight:600">本机游戏客户端</b></div>
+      <div><span>取用字段</span><b class="mono-sm">${esc(cl.key || "—")}</b></div>
+      <div><span>数据时间</span><b>${upd}</b></div>
+      <div style="grid-column:1/-1"><span>说明</span>
+        <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">
+        这份数据读自你游戏客户端里的实时状态（脚本 neoprobe_rounds.lua 每 2 秒写一次），
+        所以它是这台服当下真实的回合进度，不是接口推算。换服或退服后这里会消失。</b></div>
+    </div>`;
+  } else if (hasRound) {
+    const upd = r.updated_at ? new Date(r.updated_at * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—";
+    const cdHtml = r.timer === "expired"
+      ? `<b class="big" style="color:var(--warn)">计时归零</b>`
+      : r.time_left != null
+      ? `<b class="big" data-cd="${r.time_left}" data-ts="${r.synced_at}">${fmtSec(r.time_left)}</b>`
+      : `<b class="big muted">—</b>`;
+    const PHASE_NOTE = {
+      "回合中": r.timer === "expired"
+        ? "倒计时已提前归零，但回合仍在进行（实测可持续数分钟，期间仍有得分）。结束后进入 30 秒“回合结束”。"
+        : "倒计时从单局时长（br_time_round）往下走；可能因一方获胜提前结束。",
+      "回合结束": "结算阶段，倒计时约 30 秒（br_time_postround），之后进入准备阶段。",
+      "准备阶段": "下一局即将开始（实测约 1 分钟）；剩余局数在这个阶段减 1。",
+    };
+    const note = PHASE_NOTE[r.phase];
+    roundBlock = `<div class="round-box">
+      <div><span>回合阶段</span><b>${esc(r.phase || "—")}</b></div>
+      <div><span>剩余时间</span>${cdHtml}</div>
+      <div><span>剩余局数</span><b>${r.rounds_left != null ? r.rounds_left + " 局" : "—"}</b></div>
+      <div><span>数据时间</span><b>${upd}${r.stale ? " （偏旧）" : ""}</b></div>
+      ${note ? `<div style="grid-column:1/-1"><span>说明</span>
+        <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">${note}
+        数据来自服务端上报的 status.php（每秒刷新），不是推算。</b></div>` : ""}
+    </div>`;
+  } else if (r) {
+    // 接口里有这台服，但这次没给剩余数据。接口本身是好的（同站其它服有正常回合数据），
+    // 所以"空闲"大概率是真的：这台服当前没有进行中的对局。
+    const idle = /空闲|等待|idle|wait/i.test(r.phase || "");
+    const upd = r.updated_at ? new Date(r.updated_at * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—";
+    const maxDur = players.length ? Math.max(...players.map((p) => p.duration || 0)) : null;
+    roundBlock = `<div class="round-box">
+      <div><span>接口自报</span><b class="${idle ? "" : "muted"}">${esc(r.phase || "—")}</b></div>
+      <div><span>当前对局</span><b class="muted">${idle ? "无（空闲）" : "未提供剩余数据"}</b></div>
+      <div><span>实测在线</span><b>${i.players ?? players.length}/${i.max_players ?? "?"}</b></div>
+      <div><span>最长在线</span><b>${maxDur != null ? fmtDur(maxDur) : "—"}</b></div>
+      <div><span>接口刷新</span><b>${upd}</b></div>
+      <div style="grid-column:1/-1"><span>说明</span>
+        <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">
+        接口对这台服返回的是 -1（没有剩余局数/剩余时间）${idle ? "，并且自报为空闲" : ""}。
+        接口本身是正常的——同站的其它服在同一时刻都有完整的回合数据，所以这不是接口故障。
+        ${idle ? "这台服当前确实没有在跑对局（兑换服这类地图通常不打回合）。" : ""}
+        下面的人数和在线时长是直接向服务器实测的，与接口无关。</b></div>
+    </div>`;
+  } else {
+    const meta = state.roundsMeta || {};
+    const why = meta.enabled === false ? "回合数据已关闭"
+      : (meta.ok === false && meta.error) ? `回合接口错误：${esc(meta.error)}`
+      : "该服务器未在回合接口中上报（status.php 目前只收录 3 台测试服 + 兑换服）";
+
+    // 接口没数据时，退一步用服务器规则里的"回合参数"给出有用信息
+    const RMAP = [
+      ["br_time_round", "单局时长", "s"], ["ttt_roundtime_minutes", "单局时长", "m"],
+      ["br_time_preparing", "准备阶段", "s"], ["ttt_preptime_seconds", "准备阶段", "s"],
+      ["br_time_postround", "回合结束", "s"], ["ttt_posttime_seconds", "回合结束", "s"],
+      ["ttt_round_limit", "总局数上限", ""], ["br_roundrestart", "回合重启", ""],
+    ];
+    const extra = [];
+    const seenLabel = new Set();
+    RMAP.forEach(([k, label, unit]) => {
+      if (seenLabel.has(label)) return;          // 同一含义只展示一条（br_* 优先于 ttt_*）
+      const v = rules[k];
+      if (v === undefined || v === "" || v === "0") return;
+      seenLabel.add(label);
+      let text = v;
+      const num = parseFloat(v);
+      if (unit === "s" && isFinite(num)) text = fmtSec(num) + "（" + v + "s）";
+      else if (unit === "m" && isFinite(num)) text = num + " 分钟";
+      extra.push(`<div><span>${label}</span><b>${esc(text)}</b></div>`);
+    });
+
+    roundBlock = extra.length
+      ? `<div class="round-box">${extra.slice(0, 4).join("")}
+           <div style="grid-column:1/-1"><span>数据来源</span>
+           <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">
+           无实时回合数据 · 参数取自 A2S_RULES，用于估算单局节奏</b></div></div>`
+      : `<div class="round-box"><div style="grid-column:1/-1"><span>回合状态</span>
+           <b class="muted" style="font-family:inherit;font-size:12.5px;font-weight:400">${why}</b></div></div>`;
+  }
+
+  // 挤服参考：空位观测（只列实测值，样本不足就直说）
+  const sl = s.slots;
+  let slotsBlock = "";
+  if (sl && sl.samples >= 2) {
+    const kind = slotsSign(sl);
+    const rows = [];
+    rows.push(`<div><span>近 ${Math.round(sl.window / 60)} 分钟空位</span><b>${sl.free_events} 次 / ${sl.freed_players} 人离开</b></div>`);
+    rows.push(`<div><span>平均间隔</span><b>${sl.avg_gap ? fmtSpan(sl.avg_gap) : (sl.free_events ? "样本不足" : "—")}</b></div>`);
+    rows.push(`<div><span>上次空位</span><b>${sl.since_last_free != null ? fmtSpan(sl.since_last_free) + "前" : "本时段没有"}</b></div>`);
+    rows.push(`<div><span>预计下次</span><b>${sl.eta != null ? "约 " + fmtSpan(sl.eta) + "内" : "—"}</b></div>`);
+    if (sl.burst_period) {
+      rows.push(`<div><span>集体退服周期</span><b>约 ${fmtSpan(sl.burst_period)}（${sl.bursts} 次观测）</b></div>`);
+    }
+    rows.push(`<div><span>采样</span><b>已观测 ${fmtSpan(sl.since_start)} · ${sl.samples} 轮</b></div>`);
+    slotsBlock = `<div class="dsec">
+      <h4>挤服参考 <span class="cnt">${kind === "free" ? "有空位" : "持续满员"}</span></h4>
+      <div class="round-box">${rows.join("")}
+        <div style="grid-column:1/-1"><span>怎么来的</span>
+          <b class="muted" style="font-family:inherit;font-size:12px;font-weight:400">
+          每 20 秒拉一次这台服的玩家名单，和上一轮比对：名单里少掉的人就是离开了。
+          即使人数一直是 ${i.players ?? "?"}/${i.max_players ?? "?"} 满员，有人走、位置被别人秒补的空窗也能被记下来。
+          这里全部是实测统计，不是按回合时长推算的。</b></div>
+      </div>
+    </div>`;
+  }
+
+  return `<tr class="detail"><td colspan="8"><div class="detail-inner">
+    <div class="dsec" style="grid-column:1/-1">
+      <h4>对局 <span class="cnt">${r && r.time_left != null ? "live" : "实时"}</span></h4>
+      ${roundBlock}
+    </div>
+    ${slotsBlock}
+    ${mapBlock}
+    <div class="dsec">
+      <h4>玩家 <span class="cnt">${players.length}</span></h4>
+      <div class="players">${pHead}${pRows}</div>
+      <div class="kv">${kv.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>
+    </div>
+    <div class="dsec">
+      <h4>服务器规则 (A2S_RULES) <span class="cnt">${ruleKeys.length}</span></h4>
+      <div class="rules"><div class="rhead"><div>键</div><div>值</div></div>${rRows}</div>
+    </div>
+  </div></td></tr>`;
+}
+
+function fmtDur(sec) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  if (h) return `${h}h${String(m).padStart(2, "0")}m`;
+  if (m) return `${m}m${String(ss).padStart(2, "0")}s`;
+  return `${ss}s`;
+}
+
+function captureScroll() {
+  const out = {};
+  document.querySelectorAll(".players, .rules, .table-wrap").forEach((el) => {
+    out[el.className.split(" ")[0]] = el.scrollTop;
+  });
+  return out;
+}
+
+function restoreScroll(map) {
+  document.querySelectorAll(".players, .rules, .table-wrap").forEach((el) => {
+    const v = map[el.className.split(" ")[0]];
+    if (v) el.scrollTop = v;
+  });
+}
+
+let lastSig = "";
+
+/* 回合探针状态：让你一眼看出"面板到底有没有拿到真实回合数据" */
+function renderProbe() {
+  const dot = $("probe-dot"), txt = $("probe-text"), chip = $("probe-chip");
+  if (!dot || !txt) return;
+  const m = state.clientMeta || {};
+  const hit = state.servers.find((x) => x.client);
+  if (hit) {
+    dot.className = "dot live";
+    txt.textContent = "回合实测";
+    chip.title = `数据来自本机游戏客户端（${m.addr || hit.address}），取用字段 ${hit.client.key || "—"}`;
+  } else if (m.ok) {
+    dot.className = "dot pause";
+    txt.textContent = "探针无字段";
+    chip.title = `客户端已连 ${m.addr || "服务器"}，但没找到可读的回合字段（共 ${m.cands ?? 0} 个候选）。把 garrysmod/data/neoprobe_rounds.json 发给开发者即可校准。`;
+  } else {
+    dot.className = "dot pause";
+    txt.textContent = "探针待用";
+    chip.title = "启动游戏并进入服务器后，这里会变成「回合实测」，显示该服真实的回合进度";
+  }
+}
+
+function render(force) {
+  renderProbe();
+  const list = visibleServers();
+  const detail = state.openKey ? state.details.get(state.openKey) : null;
+  // 只有"内容真的变了"才重建 DOM：否则每秒轮询都会把详情里的滚动位置冲掉
+  const sig = JSON.stringify([
+    state.sortKey, state.sortDir, $("filter").value, state.openKey,
+    list.map((x) => [
+      x.address, x.state, x.rtt_ms,
+      x.info && x.info.players, x.info && x.info.map, x.info && x.info.tags,
+      x.rounds && x.rounds.phase, x.rounds && x.rounds.rounds_left,
+      x.rounds && x.rounds.time_left, x.rounds && x.rounds.timer,
+      x.client && [x.client.ts, x.client.key, x.client.phase, x.client.left],
+      x.mapinfo && [x.mapinfo.map, x.mapinfo.changes, x.mapinfo.since && Math.round(x.mapinfo.since / 30)],
+      x.slots && [x.slots.free_events, x.slots.since_last_free && Math.round(x.slots.since_last_free / 5),
+                  x.slots.avg_gap && Math.round(x.slots.avg_gap), x.slots.eta && Math.round(x.slots.eta / 5)],
+    ]),
+    detail && detail.ts,
+    state.queue && state.queue.active ? state.queue.address : "",
+  ]);
+  if (!force && sig === lastSig) { tickCountdowns(); return; }
+  lastSig = sig;
+
+  const scrolls = captureScroll();
+  const tb = $("tbody");
+  $("empty").hidden = state.servers.length > 0;
+  tb.innerHTML = list.map((x) => rowHtml(x) + (state.openKey === x.address ? detailHtml(x) : "")).join("");
+  restoreScroll(scrolls);
+  tickCountdowns();
+
+  if (/[?&]probe=1/.test(location.search)) {
+    const box = document.querySelector("tr.detail .round-box");
+    document.title = `open=${state.openKey || "-"} detail=${document.querySelectorAll("tr.detail").length} ` +
+      `box=${(box ? box.textContent : "(none)").replace(/\s+/g, " ").trim().slice(0, 80)}`;
+  }
+  document.querySelectorAll("thead th[data-sort]").forEach((th) => {
+    th.classList.toggle("sorted", th.dataset.sort === state.sortKey);
+    th.textContent = th.textContent.replace(/[ ▲▼]+$/, "") +
+      (th.dataset.sort === state.sortKey ? (state.sortDir > 0 ? " ▲" : " ▼") : "");
+  });
+}
+
+/* 本地走秒：不重新请求，只改文本 */
+function tickCountdowns() {
+  const now = Date.now() / 1000;
+  document.querySelectorAll("[data-cd]").forEach((el) => {
+    const base = parseFloat(el.dataset.cd);
+    const ts = parseFloat(el.dataset.ts);
+    if (!isFinite(base) || !isFinite(ts)) return;
+    const left = Math.max(0, Math.round(base - (now - ts)));
+    const text = fmtSec(left);
+    if (el.textContent !== text) el.textContent = text;
+    el.classList.toggle("cd-done", left <= 0);
+  });
+
+  const q = state.queue;
+  if (q && q.active && q.started_at) {
+    const live = fmtSec(Date.now() / 1000 - q.started_at);
+    document.querySelectorAll(".btn-queued").forEach((el) => {
+      const text = "排队 " + live;
+      if (el.textContent !== text) el.textContent = text;
+    });
+    document.querySelectorAll(".queue-banner .qb-time").forEach((el) => {
+      if (el.textContent !== live) el.textContent = live;
+    });
+  }
+}
+
+function renderGame() {
+  const chip = $("game-chip"), dot = $("game-dot"), txt = $("game-text");
+  const g = state.game;
+  if (!g) { txt.textContent = "检测中…"; return; }
+  if (g.running) {
+    dot.className = "dot live";
+    txt.textContent = "GMod 运行中";
+    chip.title = g.gmod_path || "Garry's Mod";
+  } else if (g.found) {
+    dot.className = "dot pause";
+    txt.textContent = "GMod 就绪";
+    chip.title = g.gmod_path + "（点击复制路径）";
+  } else {
+    dot.className = "dot pause";
+    txt.textContent = "未找到 GMod";
+    chip.title = "点击手动指定 gmod.exe 路径";
+  }
+}
+
+function updateStats() {
+  const on = state.servers.filter((s) => s.state === "ok");
+  $("s-online").textContent = on.length;
+  $("s-total").textContent = state.servers.length;
+  $("s-players").textContent = on.reduce((a, s) => a + ((s.info && s.info.players) || 0), 0);
+}
+
+/* ---------------- 轮询 ---------------- */
+
+let polling = false;
+/* 每秒只问一次"数据变了没"（约 40 字节），变了才去拉全量快照 */
+async function poll() {
+  if (polling) return;
+  polling = true;
+  try {
+    let rev = null;
+    try {
+      const p = await api("/api/pulse");
+      if (p.ok && Array.isArray(p.rev)) rev = p.rev.join("-");
+    } catch (e) { /* pulse 失败就照常拉全量 */ }
+    if (rev !== null && rev === state.rev) { polling = false; return; }
+    const r = await api("/api/state");
+    if (r.ok) {
+      state.rev = rev;
+      state.servers = r.servers || [];
+      state.interval = r.interval || state.interval;
+      state.auto = r.auto !== false;
+      state.roundsMeta = r.rounds_meta || null;
+      state.clientMeta = r.client_meta || null;
+      state.game = r.game || null;
+      const prevStatus = state.queue && state.queue.status;
+      state.queue = r.queue || null;
+      if (r.vip) {
+        // 已有可用数据时，忽略一次偶发失败（例如 429），别把 VIP 标签打成"身份未知"
+        if (!r.vip.ok && state.vip && state.vip.ok) { /* 保留旧值 */ }
+        else state.vip = r.vip;
+      }
+      if (state.queue && state.queue.status === "launched" && prevStatus === "watching") {
+        toast("抢到空位，正在进入 " + state.queue.address);
+      }
+      if (state.queue && state.queue.status === "failed" && prevStatus === "watching") {
+        toast(state.queue.message || "挤服失败");
+      }
+      renderQueue();
+      renderVip();
+      $("interval").value = String(Math.round(state.interval));
+      $("btn-auto").textContent = state.auto ? "暂停" : "继续";
+      updateStats();
+      renderGame();
+      render();
+      if (state.openKey) ensureDetail(state.openKey);
+    }
+  } catch (e) { /* 服务未就绪时静默重试 */ }
+  polling = false;
+}
+
+async function ensureDetail(key) {
+  const cached = state.details.get(key);
+  if (cached && Date.now() - cached.ts < 8000) return;
+  if (state.detailBusy.has(key)) return;
+  state.detailBusy.add(key);
+  const r = await api(`/api/detail?address=${encodeURIComponent(key)}&players=1&rules=1`);
+  state.detailBusy.delete(key);
+  if (state.openKey !== key) return;
+  state.details.set(key, { ts: Date.now(), ...r });
+  render();
+}
+
+/* ---------------- 交互 ---------------- */
+
+async function addAddress(raw) {
+  const r = await api("/api/add", { address: raw });
+  if (!r.ok) { toast(r.error || "添加失败"); return false; }
+  toast("已添加，正在查询…");
+  setTimeout(poll, 260);
+  return true;
+}
+
+$("btn-add").onclick = () => {
+  const v = $("addr").value.trim();
+  if (!v) { $("addr").focus(); return; }
+  addAddress(v).then((ok) => { if (ok) $("addr").value = ""; });
+};
+$("addr").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-add").click(); });
+
+$("btn-bulk").onclick = () => $("dlg-bulk").showModal();
+$("btn-bulk-ok").onclick = async () => {
+  const text = $("bulk-text").value;
+  if (!text.trim()) return;
+  const r = await api("/api/add-many", { addresses: text });
+  $("dlg-bulk").close();
+  if (r.ok) {
+    toast(`已添加 ${r.added} 个${r.skipped ? `，跳过 ${r.skipped} 个重复` : ""}${r.failed && r.failed.length ? `，${r.failed.length} 个无效` : ""}`);
+    setTimeout(poll, 300);
+  } else toast(r.error || "添加失败");
+};
+
+$("btn-refresh").onclick = async () => {
+  await api("/api/refresh", {});
+  toast("已排入刷新队列");
+  setTimeout(poll, 400);
+};
+
+const USER_PAUSED_KEY = "neoprobe.userPaused";
+const userPaused = () => localStorage.getItem(USER_PAUSED_KEY) === "1";
+
+async function applyPaused(paused, remember) {
+  if (remember) localStorage.setItem(USER_PAUSED_KEY, paused ? "1" : "0");
+  await api("/api/config", { auto: !paused });
+  state.auto = !paused;
+  $("btn-auto").textContent = paused ? "继续" : "暂停";
+}
+
+$("btn-auto").onclick = async () => {
+  const paused = state.auto;          // 正在运行时点一下 = 暂停
+  await applyPaused(paused, true);
+  toast(paused ? "自动刷新已暂停" : "自动刷新已开启");
+};
+
+$("interval").onchange = async (e) => {
+  const v = Number(e.target.value);
+  await api("/api/config", { interval: v });
+  state.interval = v;
+  toast(`自动刷新间隔：${v} 秒`);
+};
+
+$("filter").oninput = () => render();
+
+async function launchGame(address) {
+  const payload = address ? { address } : {};
+  const btn = address ? null : $("btn-launch");
+  if (btn) { btn.disabled = true; btn.textContent = "启动中…"; }
+  const r = await api("/api/launch", payload);
+  if (btn) { btn.disabled = false; btn.textContent = "启动游戏"; }
+  if (r.ok) toast(r.message || "已启动");
+  else toast(r.error || r.message || "启动失败");
+  setTimeout(poll, 900);
+}
+
+$("btn-launch").onclick = () => launchGame(null);
+
+$("game-chip").onclick = async () => {
+  const g = state.game || {};
+  if (g.found) {
+    try { await navigator.clipboard.writeText(g.gmod_path); toast("已复制 GMod 路径"); }
+    catch { toast(g.gmod_path); }
+    return;
+  }
+  const path = window.prompt("没有找到 Garry's Mod。请填写安装目录或 gmod.exe / gmod_win64.exe 的完整路径：", "");
+  if (!path) return;
+  const r = await api("/api/config", { gmod_path: path });
+  if (r.ok) { toast("已保存，正在验证…"); setTimeout(poll, 400); }
+  else toast(r.error || "保存失败");
+};
+
+document.querySelectorAll("thead th[data-sort]").forEach((th) => {
+  th.onclick = () => {
+    const k = th.dataset.sort;
+    if (state.sortKey === k) state.sortDir *= -1;
+    else { state.sortKey = k; state.sortDir = 1; }
+    render();
+  };
+});
+
+$("tbody").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-act]");
+  if (btn) {
+    e.stopPropagation();
+    const key = btn.dataset.key;
+    const act = btn.dataset.act;
+    if (act === "join") {
+      toast("正在启动并连接 " + key + " …");
+      launchGame(key);
+    } else if (act === "queue") {
+      startQueue(key);
+    } else if (act === "queue-stop") {
+      stopQueue();
+    } else if (act === "copy") {
+      try { await navigator.clipboard.writeText(key); toast("已复制 " + key); }
+      catch { toast("复制失败，请手动选择"); }
+    } else if (act === "refresh") {
+      state.details.delete(key);
+      await api("/api/refresh", { address: key });
+      toast("正在刷新 " + key);
+      setTimeout(poll, 300);
+      if (state.openKey === key) setTimeout(() => ensureDetail(key), 600);
+    } else if (act === "remove") {
+      await api("/api/remove", { address: key });
+      if (state.openKey === key) state.openKey = null;
+      state.details.delete(key);
+      toast("已移除");
+      setTimeout(poll, 150);
+    }
+    return;
+  }
+  const row = e.target.closest("tr.row");
+  if (!row) return;
+  const key = row.dataset.key;
+  if (state.openKey === key) { state.openKey = null; render(); return; }
+  state.openKey = key;
+  render();
+  ensureDetail(key);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.openKey) { state.openKey = null; render(); }
+  if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+    e.preventDefault(); $("filter").focus();
+  }
+});
+
+/* 页面不可见时临时暂停自动刷新（不写入用户偏好，刷新后仍按用户设置恢复） */
+document.addEventListener("visibilitychange", () => {
+  if (userPaused()) return;
+  applyPaused(document.hidden, false);
+});
+
+/* 上次若在隐藏状态关掉了页面，服务端 auto 可能是 false，这里按用户偏好纠正一次 */
+if (!userPaused()) applyPaused(false, false);
+
+/* ?vip=1 直接展开身份面板（便于分享/自测） */
+if (/[?&]vip=1/.test(location.search)) state.vipOpen = true;
+
+/* 支持 #open=1.2.3.4:27015 直接展开指定服务器 */
+(function initOpenFromHash() {
+  const m = /(?:^|#|&)open=([^&]+)/.exec(location.hash || "");
+  if (m) { try { state.openKey = decodeURIComponent(m[1]); } catch (e) { /* ignore */ } }
+})();
+
+$("queue-banner").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  if (btn.dataset.act === "queue-stop") stopQueue();
+  else if (btn.dataset.act === "queue-dismiss") {
+    state.queue = null;
+    renderQueue();
+    api("/api/queue/stop", {});   // 让服务端也忘掉，免得刷新后横幅又回来
+  }
+});
+
+poll();
+setInterval(() => { if (!document.hidden) poll(); }, 1000);
+setInterval(tickCountdowns, 1000);
+</script>
+</body>
+</html>

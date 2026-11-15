@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Build & release artifacts
+build/
+dist/
+*.spec
+
+# Local captures, logs, and scratch databases
+.groundtruth.jsonl
+.roundwatch.jsonl
+*.jsonl
+*.log
+*.db
+dh.json
+
+# OS / IDE
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
