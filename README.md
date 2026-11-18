@@ -1,21 +1,57 @@
+<div align="center">
+
+<img src="assets/neoprobe.png" alt="NeoProbe Logo" width="72" height="72" />
+
 # NeoProbe
 
-把 Neobreach 启动器里那几样有用的能力单独拎出来，做成一个**能查任意地址**的小工具：
+**Garry's Mod / Source 服务器监控 · 自动挤服 · 回合倒计时 · GOC 训练 · RX 美化资源站**
 
-- **服务器状态**：在线、人数、延迟、地图、gamemode、玩家列表、400 条服务器规则
-- **对局信息**：回合阶段、剩余时间（本地走秒）、剩余局数
-- **启动游戏**：一键启动 Garry's Mod，或直接连进某台服务器
-- **自动挤服**：满员的服务器挂上排队，一有空位自动进服
-- **身份 / VIP**：查本机 Steam 账号是不是 VIP、有没有到期时间、还剩几天
+[![在线访问](https://img.shields.io/badge/GitHub%20Pages-在线使用-5b4bd6?style=for-the-badge)](https://huyuchengnb-rgb.github.io/neoprobe/)
+[![GOC 奇术终端](https://img.shields.io/badge/GOC%20奇术终端-训练模式-05c9f4?style=for-the-badge)](https://huyuchengnb-rgb.github.io/neoprobe/#goc)
+[![RX 美化资源站](https://img.shields.io/badge/RX%20美化资源站-直连网盘-1f7a4d?style=for-the-badge)](https://huyuchengnb-rgb.github.io/neoprobe/#rx)
 
-协议层按 `RelayGate.ServerQueryService`（A2S）与 `LaunchService` / `ServerRoundsApiClient` 重写，
-同时修掉了原版几个硬伤。
+纯 Python 标准库实现（零第三方依赖，Python 3.10+），同时提供 **开箱即用的在线网页版** 与 **可连接本机 3 秒 UDP 抢位的本地桌面 / CLI 版**。
 
-纯标准库，不需要 pip 安装任何东西。Python 3.10+。
+</div>
 
 ---
 
-## 快速开始
+## 核心功能
+
+| 模块 | 网页版（GitHub Pages） | 本地桌面 / CLI 版 |
+| --- | --- | --- |
+| **服务器状态监控** | GitHub Actions 每 5 分钟采集 A2S 快照（人数、地图、玩家、规则） | 本机直发 UDP 并发探测，默认 15s 自动刷新与真实本机 RTT |
+| **对局与回合倒计时** | 访客浏览器每 10 秒直连 `status.php`，时间差补偿后本地走秒 | 同右，并支持读取可选本机客户端探针与换图/空位节奏统计 |
+| **一键进服与自动挤服** | 支持纯网页守候（响铃 + 桌面通知 + `steam://connect`）与 **本机桥接** | 3 秒一次 UDP 探测 + 300ms 二次复核，空位自动拉起 GMod 连服 |
+| **GOC 奇术终端** | 内置 4 关训练与考试计时（能量校准 / 西蒙符印 / 密码破解 / 符文转轮） | — |
+| **RX 美化资源站** | 顶栏直连 `rx.l1ght.xyz`（目录浏览、全站检索、一键下载与复制直链） | — |
+| **身份 / VIP 查询** | 需本机运行时查看 | 自动识别本机 Steam 账号并查询 `identity.php` 与到期倒数 |
+
+> [!TIP]
+> **一边挤服一边练 GOC / 找美化包**：在网页版挂载排队后，顶部排队状态条会全程保持可见；切换到「GOC 奇术终端」或「RX 美化资源站」也不会中断后台抢位与提醒。
+
+---
+
+## 在线网页版与本机桥接
+
+- **在线地址**：<https://huyuchengnb-rgb.github.io/neoprobe/>
+- **直达 GOC 训练**：<https://huyuchengnb-rgb.github.io/neoprobe/#goc>
+- **直达 RX 美化站**：<https://huyuchengnb-rgb.github.io/neoprobe/#rx>
+
+如果希望在浏览器网页里开启 **真实本机延迟** 与 **3 秒实时 UDP 挤服**，可在本地带跨域白名单启动 NeoProbe，并在网页右上角点击「**本机桥接**」连接：
+
+```bash
+python -m neoprobe --serve --cors-origin https://huyuchengnb-rgb.github.io
+# 或直接使用发行版 exe：
+NeoProbe.exe --serve --cors-origin https://huyuchengnb-rgb.github.io
+```
+
+> 协议层按 `RelayGate.ServerQueryService`（A2S）与 `LaunchService` / `ServerRoundsApiClient` 重写并修复多项原版痛点。
+> GOC 奇术终端源自 [bairen048-design/RXSEND](https://bairen048-design.github.io/RXSEND/)（B 站 小小白仁ovo），RX 资源站数据直连 [rx.l1ght.xyz](https://rx.l1ght.xyz/)（Powered by L1gHT）。
+
+---
+
+## 本地版快速开始
 
 ```bash
 # 1) 查一台服务器
@@ -85,6 +121,7 @@ Windows 下双击 `start.cmd` 等效于第 4 条。
 | `-w, --watch SEC` | 循环刷新（终端里当监控用） |
 | `--serve` | 启动本地 Web 面板 |
 | `--host` / `--port` | 面板监听地址/端口，默认 127.0.0.1:8777 |
+| `--cors-origin URL` | 允许跨域访问本地 API 的来源（供 GitHub Pages 桥接），可多次指定 |
 | `--no-browser` | 启动面板时不自动开浏览器 |
 | `--add ADDR...` | 只往收藏列表里加，不查询 |
 | `--list` | 查收藏列表里的全部服务器 |
@@ -318,7 +355,7 @@ python -m unittest discover -s tests -v
 覆盖：地址解析（IPv4/域名/IPv6/steam://）、challenge 握手、分包重组、压缩分包、
 玩家、规则、超时、端口关闭、gamemode 推断、回合解析与时间补偿、限流响应、服务器目录同步、
 客户端状态读取、换图与空位观测、启动命令构造、GMod 路径归一（目录 / exe / bin\win64 三种写法）、
-挤服状态机、VIP 字段兼容与日期解析、GitHub Pages 静态快照构建。共 91 个用例。
+挤服状态机、VIP 字段兼容与日期解析、GitHub Pages 静态快照构建与桥接 CORS 校验。共 92 个用例。
 
 不想连真服时，还有个假接口可以喂数据：
 
@@ -452,7 +489,7 @@ tools/
   gmod/         可选客户端探针与服务端上报 Lua 脚本
   server/       配套 PHP 回合接收端（rounds.php）
 docs/
-  index.html    GitHub Pages 静态网页版（直连 status.php + 消费 A2S 快照 + 内嵌 GOC 终端）
+  index.html    GitHub Pages 静态网页版（直连 status.php + 消费 A2S 快照 + GOC 终端 + RX 美化站）
   goc.html      GOC 奇术终端 · 训练模式页面
   assets/goc-yuai.mp3  默认背景音乐（雨爱）
   data/state.json  初始快照（Actions 运行时自动生成最新 _site/data/state.json）
@@ -469,7 +506,7 @@ tests/
   test_catalog.py      7 个用例
   test_clientstate.py  10 个用例
   test_mapinfo.py      4 个用例
-  test_pages.py        3 个用例
+  test_pages.py        4 个用例
   test_rounds_launch.py 20 个用例
   test_queue.py        9 个用例（等待/抢位/取消/预留位/探测失败）
   test_slots.py        8 个用例
