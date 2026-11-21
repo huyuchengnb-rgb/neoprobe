@@ -28,7 +28,7 @@ APP_TITLE = "NeoProbe"
 MUTEX_NAME = "Local\\NeoProbe-Desktop-SingleInstance"
 DEFAULT_SIZE = (1280, 860)
 MIN_SIZE = (960, 600)
-BG_COLOR = "#f6f7fb"
+BG_COLOR = "#f5f7fb"
 
 
 # ------------------------------------------------------------------ 日志

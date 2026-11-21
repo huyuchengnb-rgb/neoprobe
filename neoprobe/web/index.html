@@ -7,452 +7,1330 @@
 <link rel="icon" type="image/png" href="./favicon.png">
 <style>
   :root{
-    --bg:#f7f8fc; --panel:#ffffff; --panel2:#fbfbfe;
-    --ink:#1d1f2b; --ink2:#4a4e63; --ink3:#7b8199;
-    --line:#e6e8f2; --line2:#d8dcec;
-    --accent:#5b4bd6; --accent2:#7a68f0; --accentbg:#efedff;
-    --ok:#1f7a4d; --okbg:#e8f6ee;
-    --warn:#b7791f; --warnbg:#fdf4e3;
-    --bad:#c0392b; --badbg:#fdecea;
-    --mono:"Cascadia Mono",Consolas,"SF Mono",monospace;
+    --bg:#f5f7fb;
+    --panel:#ffffff;
+    --panel2:#f8f9fc;
+    --panel3:#f1f3f9;
+    --ink:#161926;
+    --ink2:#454a5e;
+    --ink3:#767d96;
+    --line:#e3e7f1;
+    --line2:#d3d8e8;
+    --accent:#5b4bd6;
+    --accent2:#6e5ee8;
+    --accent-dark:#4839bc;
+    --accentbg:#f0edff;
+    --accent-line:#cfc8fa;
+    --ok:#157f4b;
+    --ok2:#1b965a;
+    --okbg:#e8f7ef;
+    --ok-line:#b7e4cb;
+    --warn:#b56b12;
+    --warn-solid:#c87619;
+    --warn-hover:#db8522;
+    --warnbg:#fef5e6;
+    --warn-line:#f2cfa0;
+    --bad:#c4322b;
+    --badbg:#fdeceb;
+    --bad-line:#f5c2be;
+    --shadow-xs:0 1px 2px rgba(18,24,44,.04);
+    --shadow-sm:0 1px 3px rgba(18,24,44,.05),0 4px 12px rgba(18,24,44,.035);
+    --shadow-md:0 4px 14px rgba(18,24,44,.07),0 1px 3px rgba(18,24,44,.04);
+    --mono:"Cascadia Mono",Consolas,"SF Mono","JetBrains Mono",monospace;
   }
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
   html,body{height:100%}
   body{
-    margin:0;background:var(--bg);color:var(--ink);
-    font-family:"Segoe UI","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
-    font-size:14px;line-height:1.6;
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+    font-size:13.5px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
   }
-  .app{max-width:1280px;margin:0 auto;padding:22px 24px 60px}
 
-  /* ---------- 顶栏 ---------- */
-  .top{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:20px}
-  .brand{display:flex;align-items:center;gap:11px}
+  /* ---------- 现代桌面滚动条 ---------- */
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#cdd3e4;border-radius:99px}
+  ::-webkit-scrollbar-thumb:hover{background:#aeb6ce}
+
+  .app{
+    max-width:1440px;
+    margin:0 auto;
+    padding:12px 18px 32px;
+  }
+
+  /* ---------- 一体化紧凑顶栏（Sticky 桌面导航头） ---------- */
+  .top{
+    position:sticky;
+    top:8px;
+    z-index:30;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    background:rgba(255,255,255,.94);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--line);
+    border-radius:13px;
+    padding:7px 12px;
+    margin-bottom:10px;
+    box-shadow:var(--shadow-sm);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding-right:4px;
+    flex:none;
+  }
   .logo{
-    width:38px;height:38px;border-radius:10px;flex:none;
-    background:linear-gradient(140deg,#6756e0,#8d7bf5);
-    box-shadow:0 4px 12px rgba(103,86,224,.28);
-    display:flex;align-items:center;justify-content:center;
+    width:33px;
+    height:33px;
+    border-radius:9px;
+    flex:none;
+    background:linear-gradient(140deg,#5b4bd6 0%,#8370f4 100%);
+    box-shadow:0 3px 10px rgba(91,75,214,.28),inset 0 1px 0 rgba(255,255,255,.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
-  .logo svg{width:21px;height:21px}
-  h1{margin:0;font-size:19px;letter-spacing:.3px}
-  .sub{color:var(--ink3);font-size:12.5px;margin-top:1px}
-  .stats{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
-  .stat{
-    background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    padding:8px 15px;min-width:92px;
+  .logo svg{width:18px;height:18px}
+  .brand-text{display:flex;flex-direction:column;justify-content:center}
+  h1{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.2px;
+    line-height:1.2;
+    color:var(--ink);
   }
-  .stat b{display:block;font-size:19px;line-height:1.25;font-family:var(--mono)}
-  .stat span{color:var(--ink3);font-size:11.5px}
+  .sub{
+    color:var(--ink3);
+    font-size:11px;
+    line-height:1.2;
+    margin-top:2px;
+    white-space:nowrap;
+  }
 
-  /* ---------- 工具条 ---------- */
-  .bar{
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-    margin-bottom:14px;
+  /* ---------- 主功能切换（分段胶囊导航） ---------- */
+  .nav-tabs{
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    padding:3px;
+    background:var(--panel3);
+    border:1px solid var(--line);
+    border-radius:10px;
+    flex:none;
   }
+  .nav-tab{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 12px;
+    border-radius:7px;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink2);
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    transition:all .14s ease;
+    white-space:nowrap;
+  }
+  .nav-tab:hover{
+    color:var(--accent);
+    background:rgba(255,255,255,.65);
+  }
+  .nav-tab.active{
+    background:var(--accent);
+    color:#fff;
+    box-shadow:0 2px 6px rgba(91,75,214,.25);
+  }
+  .nav-tab .tab-tag{
+    font-size:10px;
+    padding:1px 5px;
+    border-radius:8px;
+    font-weight:600;
+    background:var(--accentbg);
+    color:var(--accent);
+    line-height:1.3;
+  }
+  .nav-tab.active .tab-tag{
+    background:rgba(255,255,255,.22);
+    color:#fff;
+  }
+
+  /* ---------- 顶栏右侧：本机环境状态组 ---------- */
+  .top-env{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-left:auto;
+    flex-wrap:wrap;
+  }
+  .vip-chip,.game-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font:inherit;
+    font-size:12px;
+    color:var(--ink2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:4px 9px;
+    height:30px;
+    background:var(--panel2);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .14s ease;
+    user-select:none;
+  }
+  .vip-chip:hover,.game-chip:hover{
+    border-color:var(--accent-line);
+    background:var(--accentbg);
+    color:var(--accent);
+  }
+  .vip-chip.is-vip{
+    border-color:var(--ok-line);
+    background:var(--okbg);
+    color:var(--ok);
+  }
+  .vip-chip.is-vip:hover{
+    border-color:#8fd0aa;
+    background:#def3e7;
+  }
+  .vip-chip b{
+    font-weight:600;
+    font-size:12px;
+    font-variant-numeric:tabular-nums;
+  }
+  .vip-chip .days{
+    font-family:var(--mono);
+    font-size:11px;
+    opacity:.88;
+  }
+  .game-chip{max-width:220px}
+  .game-chip b{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--ink2);
+    font-weight:600;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:135px;
+  }
+  .game-chip:hover b{color:var(--accent)}
+
+  /* ---------- 通用表单与按钮 ---------- */
   input[type=text],select{
-    font-family:inherit;font-size:13.5px;color:var(--ink);
-    background:var(--panel2);border:1px solid var(--line2);border-radius:8px;
-    padding:8px 12px;outline:none;transition:.15s;
+    font-family:inherit;
+    font-size:12.5px;
+    color:var(--ink);
+    background:var(--panel);
+    border:1px solid var(--line2);
+    border-radius:8px;
+    padding:5px 10px;
+    height:31px;
+    outline:none;
+    transition:border-color .14s,box-shadow .14s,background .14s;
   }
-  input[type=text]:focus,select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(122,104,240,.14)}
-  #addr{flex:1 1 280px;min-width:200px;font-family:var(--mono)}
-  #filter{flex:0 1 170px}
+  input[type=text]::placeholder{color:#949bb2}
+  input[type=text]:focus,select:focus{
+    border-color:var(--accent2);
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(110,94,232,.14);
+  }
   button,.btn-link{
-    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
-    border-radius:8px;padding:8px 15px;border:1px solid transparent;transition:.15s;
-    text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:8px;
+    padding:5px 12px;
+    height:31px;
+    border:1px solid transparent;
+    transition:all .14s ease;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    white-space:nowrap;
+    user-select:none;
   }
-  .btn-primary{background:var(--accent);color:#fff}
-  .btn-primary:hover{background:var(--accent2)}
-  .btn-ghost{background:var(--panel2);color:var(--ink2);border-color:var(--line2)}
-  .btn-ghost:hover{background:var(--accentbg);color:var(--accent);border-color:#c9c2f8}
-  .btn-sm{padding:4px 10px;font-size:12px;font-weight:500}
+  button:focus-visible,.btn-link:focus-visible,input:focus-visible,select:focus-visible{
+    outline:2px solid var(--accent2);
+    outline-offset:1px;
+  }
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    box-shadow:0 1px 2px rgba(91,75,214,.2);
+  }
+  .btn-primary:hover:not(:disabled){background:var(--accent2)}
+  .btn-ghost{
+    background:var(--panel);
+    color:var(--ink2);
+    border-color:var(--line2);
+  }
+  .btn-ghost:hover:not(:disabled){
+    background:var(--accentbg);
+    color:var(--accent);
+    border-color:var(--accent-line);
+  }
+  .btn-launch{
+    background:var(--ok);
+    color:#fff;
+    height:30px;
+    padding:4px 12px;
+    font-size:12px;
+    box-shadow:0 1px 3px rgba(21,127,75,.22);
+  }
+  .btn-launch:hover:not(:disabled){background:var(--ok2)}
+  .btn-sm{
+    padding:3px 9px;
+    height:26px;
+    font-size:11.5px;
+    font-weight:600;
+    border-radius:7px;
+  }
+  .btn-mini{padding:3px 8px;height:25px;font-size:11.5px}
   .grow{flex:1}
 
-  /* ---------- 列表 ---------- */
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .table-wrap{overflow-x:auto}
-  table{width:100%;border-collapse:collapse;min-width:560px;table-layout:auto}
-  thead th{
-    text-align:left;font-size:11.5px;font-weight:700;color:var(--ink3);
-    letter-spacing:.6px;text-transform:uppercase;
-    padding:11px 14px;background:var(--panel2);border-bottom:1px solid var(--line);
-    cursor:pointer;user-select:none;white-space:nowrap;
+  /* ---------- 顶栏下方：VIP 详情抽屉面板 ---------- */
+  .vip-panel{
+    border:1px solid var(--accent-line);
+    border-top:2px solid var(--accent);
+    border-radius:11px;
+    background:var(--panel);
+    padding:10px 14px;
+    margin:0 0 10px;
+    display:grid;
+    gap:8px 20px;
+    grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+    box-shadow:var(--shadow-sm);
   }
-  thead th:hover{color:var(--accent)}
-  thead th.sorted{color:var(--accent)}
-  tbody tr.row{border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
-  tbody tr.row:hover{background:#faf9ff}
+  .vip-panel[hidden]{display:none}
+  .vip-panel .item span{
+    display:block;
+    color:var(--ink3);
+    font-size:11px;
+    margin-bottom:1px;
+  }
+  .vip-panel .item b{
+    font-family:var(--mono);
+    font-size:12.5px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .vip-panel .item b.plain{font-family:inherit;font-weight:600}
+  .vip-panel .acts{
+    grid-column:1/-1;
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+    align-items:center;
+    border-top:1px dashed var(--line);
+    padding-top:8px;
+    margin-top:2px;
+  }
+  .vip-panel .acts button{
+    background:var(--panel2);
+    border:1px solid var(--line2);
+    border-radius:7px;
+    padding:3px 10px;
+    height:26px;
+    font-size:11.5px;
+    cursor:pointer;
+    color:var(--ink2);
+  }
+  .vip-panel .acts button:hover{
+    border-color:var(--accent-line);
+    background:var(--accentbg);
+    color:var(--accent);
+  }
+  .vip-panel .hint{
+    color:var(--ink3);
+    font-size:11px;
+    margin-left:auto;
+  }
+
+  /* ---------- 挤服常驻横幅 ---------- */
+  .queue-banner{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    border:1px solid var(--warn-line);
+    background:linear-gradient(90deg,#fff7ea 0%,#fffdf8 100%);
+    border-radius:11px;
+    padding:8px 13px;
+    margin:0 0 10px;
+    font-size:12.5px;
+    box-shadow:0 3px 10px rgba(194,118,31,.08);
+    animation:qb-breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes qb-breathe{
+    0%,100%{border-color:#f0c993;box-shadow:0 3px 10px rgba(194,118,31,.07)}
+    50%{border-color:#e29d45;box-shadow:0 3px 14px rgba(194,118,31,.16)}
+  }
+  .queue-banner[hidden]{display:none}
+  .queue-banner.ok{
+    border-color:var(--ok-line);
+    background:linear-gradient(90deg,#eefaf3 0%,#fbfffd 100%);
+    box-shadow:0 3px 10px rgba(21,127,75,.08);
+    animation:none;
+  }
+  .queue-banner.bad{
+    border-color:var(--bad-line);
+    background:linear-gradient(90deg,#fdf1ef 0%,#fffbfa 100%);
+    box-shadow:none;
+    animation:none;
+  }
+  .queue-banner .qb-main{
+    font-weight:700;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .queue-banner .qb-meta{
+    color:var(--ink2);
+    font-size:12px;
+    font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
+    background:rgba(255,255,255,.75);
+    border:1px solid rgba(0,0,0,.06);
+    padding:1px 8px;
+    border-radius:6px;
+  }
+  .queue-banner .qb-hint{color:#a35c12;font-size:11.5px;font-weight:500}
+  .queue-banner .grow{flex:1 1 40px}
+  @media(max-width:860px){.queue-banner .qb-hint{display:none}}
+  .queue-banner button{
+    background:#fff;
+    border:1px solid var(--line2);
+    border-radius:7px;
+    padding:3px 10px;
+    height:26px;
+    font-size:11.5px;
+    cursor:pointer;
+    color:var(--ink2);
+  }
+  .queue-banner button:hover{
+    border-color:#d8a86b;
+    color:#a35c12;
+    background:#fffaf2;
+  }
+  .spin{
+    display:inline-block;
+    width:13px;
+    height:13px;
+    border:2px solid #ebd0a9;
+    border-top-color:var(--warn-solid);
+    border-radius:50%;
+    animation:spin .85s linear infinite;
+    flex:none;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- 服务器控制台工具条（双层紧凑架构） ---------- */
+  .console-bar{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin-bottom:10px;
+    box-shadow:var(--shadow-xs);
+    overflow:hidden;
+  }
+  .bar-primary{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 12px;
+    flex-wrap:wrap;
+  }
+  .bar-secondary{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 12px;
+    background:var(--panel2);
+    border-top:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .bar-label{
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--ink3);
+    letter-spacing:.3px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+    user-select:none;
+  }
+  .bar{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:8px 12px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+    box-shadow:var(--shadow-xs);
+  }
+
+  /* ---------- KPI 统计胶囊 ---------- */
+  .stats{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .stat{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:3px 10px;
+    height:31px;
+    white-space:nowrap;
+  }
+  .stat span{
+    color:var(--ink3);
+    font-size:11.5px;
+    font-weight:600;
+  }
+  .stat b{
+    font-size:14.5px;
+    font-weight:700;
+    font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
+    color:var(--ink);
+    line-height:1;
+  }
+  .stat.stat-online{
+    background:var(--okbg);
+    border-color:var(--ok-line);
+  }
+  .stat.stat-online span{color:var(--ok)}
+  .stat.stat-online b{color:var(--ok)}
+  .stat.stat-players{
+    background:var(--accentbg);
+    border-color:var(--accent-line);
+  }
+  .stat.stat-players span{color:var(--accent)}
+  .stat.stat-players b{color:var(--accent)}
+
+  .bar-sep{
+    width:1px;
+    height:18px;
+    background:var(--line);
+    margin:0 2px;
+    flex:none;
+  }
+  #filter{
+    width:215px;
+    flex:0 1 215px;
+    background:var(--panel2);
+  }
+  #filter:focus{background:#fff}
+  #interval{
+    padding:4px 8px;
+    background:var(--panel2);
+    font-variant-numeric:tabular-nums;
+  }
+  #addr{
+    flex:1 1 280px;
+    min-width:180px;
+    font-family:var(--mono);
+    font-size:12px;
+    height:29px;
+    background:#fff;
+  }
+  .bar-secondary button{
+    height:29px;
+    padding:4px 12px;
+    font-size:12px;
+  }
+
+  /* ---------- 服务器列表表格 ---------- */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:var(--shadow-sm);
+  }
+  .table-wrap{overflow-x:auto}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:560px;
+    table-layout:auto;
+  }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    font-weight:700;
+    color:var(--ink3);
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    padding:8px 12px;
+    background:var(--panel2);
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+    transition:color .12s,background .12s;
+  }
+  thead th:hover{color:var(--accent);background:#f2f4fa}
+  thead th.sorted{color:var(--accent);background:#f0effa}
+  tbody tr.row{
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    transition:background .1s ease;
+  }
+  tbody tr.row:last-child{border-bottom:none}
+  tbody tr.row:hover{background:#f7f8fd}
   tbody tr.row.open{background:var(--accentbg)}
-  tbody tr.row.offline{background:#fffdfdfb}
-  td{padding:11px 14px;vertical-align:middle}
-  .name{font-weight:600;max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .name-addr{display:none;font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:2px}
-  .addr{font-family:var(--mono);font-size:12.5px;color:var(--ink2);white-space:nowrap}
-  .map{font-family:var(--mono);font-size:12.5px;color:var(--ink2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .num{font-family:var(--mono);font-size:13px}
+  tbody tr.row.offline{background:#fcfafb}
+  tbody tr.row.offline .name{color:var(--ink2)}
+  td{
+    padding:7px 12px;
+    vertical-align:middle;
+  }
+
+  /* 服务器名与副行 */
+  .srv-main{
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .s-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    flex:none;
+  }
+  .s-dot.ok{
+    background:#19a964;
+    box-shadow:0 0 0 3px rgba(25,169,100,.16);
+  }
+  .s-dot.wait{
+    background:#e09124;
+    box-shadow:0 0 0 3px rgba(224,145,36,.16);
+  }
+  .s-dot.bad{
+    background:#d44c44;
+  }
+  .name{
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink);
+    max-width:340px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    line-height:1.3;
+  }
+  .srv-sub{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:2px;
+    padding-left:14px;
+    line-height:1.2;
+  }
+  .name-addr{
+    display:none;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink3);
+    font-variant-numeric:tabular-nums;
+  }
+  .addr{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink2);
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .map{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink2);
+    max-width:155px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .map-tag{
+    display:inline-block;
+    max-width:150px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:1px 7px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--ink2);
+    vertical-align:middle;
+  }
+  .num{
+    font-family:var(--mono);
+    font-size:12.5px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    min-width:42px;
+  }
+  .num.is-full{color:var(--warn)}
   .muted{color:var(--ink3)}
+
+  /* 状态与模式胶囊 */
   .pill{
-    display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;
-    font-weight:600;letter-spacing:.2px;
+    display:inline-flex;
+    align-items:center;
+    padding:0 6px;
+    border-radius:99px;
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:.15px;
+    line-height:1.5;
   }
   .pill-ok{background:var(--okbg);color:var(--ok)}
   .pill-bad{background:var(--badbg);color:var(--bad)}
   .pill-wait{background:var(--warnbg);color:var(--warn)}
-  .pill-mode{background:var(--accentbg);color:var(--accent);font-family:var(--mono);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
-  .bar-wrap{display:flex;align-items:center;gap:7px}
-  .meter{width:52px;height:5px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
-  .meter i{display:block;height:100%;border-radius:3px;background:var(--accent2)}
-  .lat{font-family:var(--mono);font-size:12.5px;width:52px;text-align:right;white-space:nowrap}
-  .lat.good{color:var(--ok)} .lat.mid{color:var(--warn)} .lat.bad{color:var(--bad)}
-  .actions{white-space:nowrap;text-align:right}
-  .actions button{opacity:.55;transition:.15s}
-  tr:hover .actions button{opacity:1}
+  .pill-vac{background:#eef1ff;color:#4355c4}
+  .pill-mode{
+    background:var(--accentbg);
+    color:var(--accent);
+    font-family:var(--mono);
+    font-size:11px;
+    max-width:125px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    display:inline-block;
+    padding:1px 8px;
+    border-radius:6px;
+  }
 
-  /* ---------- 详情 ---------- */
-  tr.detail>td{background:var(--panel2);padding:0;border-bottom:1px solid var(--line)}
-  .detail-inner{padding:16px 18px;display:grid;grid-template-columns:1.15fr 1fr;gap:20px}
-  @media(max-width:900px){.detail-inner{grid-template-columns:1fr}}
-  .dsec h4{
-    margin:0 0 9px;font-size:12px;color:var(--ink3);font-weight:700;
-    letter-spacing:.7px;text-transform:uppercase;display:flex;align-items:center;gap:8px;
+  /* 人数容量条 */
+  .bar-wrap{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-variant-numeric:tabular-nums;
   }
-  .dsec h4 .cnt{background:var(--accentbg);color:var(--accent);border-radius:10px;padding:0 7px;font-size:11px}
-  .players{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border:1px solid var(--line);border-radius:8px;background:#fff}
-  .prow{display:grid;grid-template-columns:26px 1fr 48px 56px;gap:8px;padding:6px 10px;font-size:12.5px;border-bottom:1px solid #f2f3f9}
-  .prow:last-child{border-bottom:none}
-  .prow .idx{color:var(--ink3);font-family:var(--mono);text-align:right}
-  .prow .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .prow .pscore,.prow .ptime{font-family:var(--mono);text-align:right;color:var(--ink2)}
-  .phead,.rhead{
-    position:sticky;top:0;z-index:1;background:var(--panel2);
-    font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--ink3);
-    text-transform:uppercase;border-bottom:1px solid var(--line);
+  .meter{
+    width:48px;
+    height:5px;
+    border-radius:99px;
+    background:var(--line);
+    overflow:hidden;
+    flex:none;
   }
-  .phead{display:grid;grid-template-columns:26px 1fr 48px 56px;gap:8px;padding:5px 10px}
-  .rhead{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:5px 10px}
-  .phead .r,.rhead .r{text-align:right}
-  .rules{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;border:1px solid var(--line);border-radius:8px;background:#fff}
-  .rrow{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:5px 10px;font-size:12px;border-bottom:1px solid #f2f3f9}
-  .rrow:last-child{border-bottom:none}
-  .rk{font-family:var(--mono);color:var(--ink3);overflow:hidden;text-overflow:ellipsis}
-  .rv{font-family:var(--mono);color:var(--ink2);word-break:break-all}
-  .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 18px;margin-top:12px;font-size:12.5px}
-  .kv div span{color:var(--ink3);display:block;font-size:11px}
-  .kv div b{font-weight:600;font-family:var(--mono);font-size:12.5px}
-  .dnote{grid-column:1/-1;color:var(--ink3);font-size:12.5px;padding:8px 0 0}
+  .meter i{
+    display:block;
+    height:100%;
+    border-radius:99px;
+    background:var(--accent2);
+    transition:width .25s ease;
+  }
+  .meter.meter-high i{background:#e08b24}
+  .meter.meter-full i{background:#d65f1b}
 
-  /* ---------- 空态 / toast ---------- */
-  .empty{padding:52px 20px;text-align:center;color:var(--ink3)}
-  .empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:6px}
-  .empty code{background:var(--accentbg);color:var(--accent);padding:2px 7px;border-radius:5px;font-family:var(--mono);font-size:12.5px}
-  #toast{
-    position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
-    background:#251f4a;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;
-    opacity:0;pointer-events:none;transition:.22s;box-shadow:0 8px 24px rgba(20,16,50,.28);z-index:99;
+  /* 延迟胶囊 */
+  .lat{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    min-width:54px;
+    text-align:right;
+    white-space:nowrap;
+    padding:1px 6px;
+    border-radius:6px;
   }
-  #toast.on{opacity:1;transform:translate(-50%,0)}
-  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
-  .dot.live{background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.18)}
-  .dot.pause{background:#b0b6cc}
-  textarea{
-    width:100%;min-height:120px;font-family:var(--mono);font-size:12.5px;
-    border:1px solid var(--line2);border-radius:8px;padding:10px;background:var(--panel2);
-    outline:none;resize:vertical;color:var(--ink)
-  }
-  dialog{
-    border:none;border-radius:14px;padding:0;box-shadow:0 20px 60px rgba(20,16,50,.2);
-    max-width:520px;width:92%;
-  }
-  dialog::backdrop{background:rgba(24,20,48,.32)}
-  .dlg-h{padding:18px 20px 0;font-size:15px;font-weight:700}
-  .dlg-b{padding:12px 20px}
-  .dlg-f{padding:0 20px 18px;display:flex;gap:9px;justify-content:flex-end}
+  .lat.good{color:var(--ok);background:rgba(21,127,75,.07)}
+  .lat.mid{color:var(--warn);background:rgba(181,107,18,.08)}
+  .lat.bad{color:var(--bad);background:rgba(196,50,43,.08)}
 
-  /* ---------- 身份 / VIP ---------- */
-  .vip-chip{
-    display:flex;align-items:center;gap:7px;font:inherit;font-size:12px;color:var(--ink3);
-    border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel2);
-    cursor:pointer;white-space:nowrap;
+  /* 操作列按钮 */
+  .actions{
+    white-space:nowrap;
+    text-align:right;
   }
-  .vip-chip:hover{border-color:#c9c2f8;color:var(--accent)}
-  .vip-chip.is-vip{border-color:#bfe3cd;background:#f3fbf6;color:#1f7a4d}
-  .vip-chip.is-vip:hover{border-color:#8fd0aa}
-  .vip-chip b{font-weight:600;font-size:12px}
-  .vip-chip .days{font-family:var(--mono);font-size:11.5px;opacity:.85}
-  .vip-panel{
-    border:1px solid var(--line);border-radius:10px;background:var(--panel);
-    padding:11px 14px;margin:0 0 10px;display:grid;gap:8px 22px;
-    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  .actions-inner{
+    display:inline-flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:4px;
   }
-  .vip-panel[hidden]{display:none}
-  .vip-panel .item span{display:block;color:var(--ink3);font-size:11px;margin-bottom:2px}
-  .vip-panel .item b{font-family:var(--mono);font-size:13px;font-weight:600}
-  .vip-panel .item b.plain{font-family:inherit;font-weight:600}
-  .vip-panel .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-    border-top:1px dashed var(--line);padding-top:9px;margin-top:2px}
-  .vip-panel .acts button{
-    background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 10px;
-    font-size:12px;cursor:pointer;color:var(--ink2);
+  .actions button.btn-ghost{
+    opacity:.78;
+    padding:2px 8px;
+    height:25px;
+    font-size:11.5px;
   }
-  .vip-panel .acts button:hover{border-color:#c9c2f8;color:var(--accent)}
-  .vip-panel .hint{color:var(--ink3);font-size:11.5px;margin-left:auto}
-
-  /* ---------- 自动挤服 ---------- */
+  tr:hover .actions button.btn-ghost{opacity:1}
+  .actions button.col-remove:hover{
+    background:var(--badbg);
+    color:var(--bad);
+    border-color:var(--bad-line);
+  }
+  .btn-join{
+    background:var(--okbg);
+    color:var(--ok);
+    border:1px solid var(--ok-line);
+    padding:2px 10px;
+    height:25px;
+    font-size:11.5px;
+    border-radius:7px;
+    font-weight:700;
+  }
+  .btn-join:hover{
+    background:var(--ok);
+    color:#fff;
+    border-color:var(--ok);
+  }
   .btn-queue{
-    background:#c2761f;color:#fff;border:1px solid #c2761f;
-    padding:4px 10px;font-size:12px;border-radius:7px;cursor:pointer;
-    font-weight:600;white-space:nowrap;
+    background:var(--warn-solid);
+    color:#fff;
+    border:1px solid var(--warn-solid);
+    padding:2px 10px;
+    height:25px;
+    font-size:11.5px;
+    border-radius:7px;
+    cursor:pointer;
+    font-weight:700;
+    white-space:nowrap;
   }
-  .btn-queue:hover{background:#d98a2b;border-color:#d98a2b}
+  .btn-queue:hover{
+    background:var(--warn-hover);
+    border-color:var(--warn-hover);
+  }
   .btn-queued{
-    background:#fff4e3;color:#a35c12;border-color:#f0cfa2;
+    background:var(--warnbg);
+    color:#9e560d;
+    border:1px solid var(--warn-line);
+    padding:2px 9px;
+    height:25px;
+    font-size:11.5px;
+    font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
     animation:pulseq 1.6s ease-in-out infinite;
   }
-  @keyframes pulseq{0%,100%{box-shadow:0 0 0 0 rgba(194,118,31,.28)}50%{box-shadow:0 0 0 5px rgba(194,118,31,0)}}
-  .queue-banner{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-    border:1px solid #f0cfa2;background:linear-gradient(90deg,#fff8ee,#fffdf9);
-    border-radius:10px;padding:9px 13px;margin:0 0 10px;font-size:13px;
+  @keyframes pulseq{
+    0%,100%{box-shadow:0 0 0 0 rgba(194,118,31,.28)}
+    50%{box-shadow:0 0 0 4px rgba(194,118,31,0)}
   }
-  .queue-banner.ok{border-color:#bfe3cd;background:linear-gradient(90deg,#f1fbf5,#fbfffd)}
-  .queue-banner.bad{border-color:#f2c4bd;background:linear-gradient(90deg,#fdf2f0,#fffbfa)}
-  .queue-banner .qb-main{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
-  .queue-banner .qb-meta{color:var(--ink3);font-size:12px;font-family:var(--mono)}
-  .queue-banner .qb-hint{color:#a35c12;font-size:12px}
-  .queue-banner .grow{flex:1 1 80px}
-  @media(max-width:860px){ .queue-banner .qb-hint{display:none} }
-  .queue-banner button{
-    background:#fff;border:1px solid var(--line);border-radius:7px;padding:4px 10px;
-    font-size:12px;cursor:pointer;color:var(--ink2);
-  }
-  .queue-banner button:hover{border-color:#d8a86b;color:#a35c12}
-  .spin{display:inline-block;width:12px;height:12px;border:2px solid #e8c79b;
-    border-top-color:#c2761f;border-radius:50%;animation:spin .9s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ---------- 回合 / 启动游戏 ---------- */
-  .round-cell{display:flex;flex-direction:column;gap:1px;line-height:1.3}
-  .round-time{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:.3px}
+  /* ---------- 回合 / 剩余倒计时（核心数据列） ---------- */
+  .round-cell{
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+    line-height:1.25;
+  }
+  .round-time{
+    font-family:var(--mono);
+    font-size:13.5px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    color:var(--ink);
+    letter-spacing:.2px;
+  }
   .round-time.muted{color:var(--ink3);font-weight:400}
   .round-time.cd-done{color:var(--warn)}
-  .round-meta{font-size:11px;color:var(--ink3);white-space:nowrap;display:flex;align-items:center;gap:5px}
-  .pill-phase{background:#eef0fb;color:#4b5390;font-size:10.5px;padding:1px 6px;border-radius:9px;font-weight:600}
-  /* 本机客户端实测的标记：和服端接口数据视觉上区分开 */
-  .tag-local{background:#e8f5ec;color:#1c7a3e;font-size:10.5px;padding:1px 6px;border-radius:9px;font-weight:600;margin-left:4px}
-  .mono-sm{font-family:var(--mono);font-size:11.5px;font-weight:600}
-  .game-chip{
-    display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink3);
-    border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel2);
-    cursor:pointer;max-width:280px;
+  .round-meta{
+    font-size:11px;
+    color:var(--ink3);
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    font-variant-numeric:tabular-nums;
   }
-  .game-chip:hover{border-color:#c9c2f8;color:var(--accent)}
-  .game-chip b{font-family:var(--mono);font-size:11.5px;color:var(--ink2);font-weight:600;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
-  .btn-launch{background:#1f7a4d;color:#fff}
-  .btn-launch:hover{background:#25925c}
-  .btn-mini{padding:4px 9px;font-size:12px}
-  .dsec .round-box{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 16px;
-    border:1px solid var(--line);border-radius:8px;padding:11px 13px;background:#fff}
-  .round-box div span{color:var(--ink3);font-size:11px;display:block}
-  .round-box div b{font-family:var(--mono);font-size:14px;font-weight:600}
-  .round-box div b.big{font-size:16px;color:var(--accent)}
-  /* "未上报 / —" 这类占位不是数据，别用强调色，否则看着像真的倒计时 */
+  .pill-phase{
+    background:#eaeefc;
+    color:#434b8c;
+    font-size:10px;
+    padding:0 5px;
+    border-radius:5px;
+    font-weight:600;
+    line-height:1.45;
+  }
+  .tag-local{
+    background:var(--okbg);
+    color:var(--ok);
+    font-size:10px;
+    padding:0 5px;
+    border-radius:5px;
+    font-weight:600;
+  }
+  .mono-sm{font-family:var(--mono);font-size:11.5px;font-weight:600}
+
+  /* ---------- 展开详情面板（卡片式网格） ---------- */
+  tr.detail>td{
+    background:linear-gradient(180deg,#f4f5fb 0%,#f8f9fd 100%);
+    padding:0;
+    border-bottom:1px solid var(--line2);
+  }
+  .detail-inner{
+    padding:14px 16px;
+    display:grid;
+    grid-template-columns:1.12fr 1fr;
+    gap:14px;
+  }
+  @media(max-width:920px){.detail-inner{grid-template-columns:1fr}}
+  .detail-top-grid{
+    grid-column:1/-1;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+    gap:12px;
+  }
+  .dsec{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px 13px;
+    box-shadow:var(--shadow-xs);
+  }
+  .dsec h4{
+    margin:0 0 8px;
+    font-size:11.5px;
+    color:var(--ink2);
+    font-weight:700;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .dsec h4 .cnt{
+    background:var(--accentbg);
+    color:var(--accent);
+    border-radius:99px;
+    padding:0 7px;
+    font-size:10.5px;
+    font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
+  }
+  .dsec h4 .rule-search{
+    margin-left:auto;
+    height:23px;
+    padding:2px 8px;
+    font-size:11.5px;
+    width:155px;
+    border-radius:6px;
+    background:var(--panel2);
+    font-weight:400;
+    text-transform:none;
+    letter-spacing:0;
+  }
+  .dsec .round-box{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(115px,1fr));
+    gap:8px 14px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 12px;
+    background:var(--panel2);
+  }
+  .round-box div span{color:var(--ink3);font-size:10.5px;display:block}
+  .round-box div b{
+    font-family:var(--mono);
+    font-size:13px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .round-box div b.big{font-size:15.5px;color:var(--accent)}
   .round-box div b.big.muted{color:var(--ink3);font-weight:500}
 
-  /* ---------- 主功能切换 / GOC 奇术终端 ---------- */
-  .nav-tabs{
-    display:inline-flex;gap:6px;flex-wrap:wrap;padding:5px;margin-bottom:14px;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  .players,.rules{
+    max-height:248px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    scrollbar-gutter:stable;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#fff;
   }
-  .nav-tab{
-    display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border-radius:8px;
-    font-size:13px;font-weight:600;color:var(--ink2);background:transparent;border:none;
-    cursor:pointer;transition:.15s;
+  .phead,.rhead{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:var(--panel2);
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.5px;
+    color:var(--ink3);
+    text-transform:uppercase;
+    border-bottom:1px solid var(--line);
   }
-  .nav-tab:hover{background:var(--panel2);color:var(--accent)}
-  .nav-tab.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(91,75,214,.25)}
-  .nav-tab .tab-tag{
-    font-size:10.5px;padding:1px 6px;border-radius:10px;font-weight:600;
-    background:var(--accentbg);color:var(--accent);
+  .phead{display:grid;grid-template-columns:28px 1fr 52px 60px;gap:8px;padding:5px 10px}
+  .rhead{display:grid;grid-template-columns:155px 1fr;gap:10px;padding:5px 10px}
+  .phead .r,.rhead .r{text-align:right}
+  .prow{
+    display:grid;
+    grid-template-columns:28px 1fr 52px 60px;
+    gap:8px;
+    padding:5px 10px;
+    font-size:12px;
+    border-bottom:1px solid #f2f4f9;
+    font-variant-numeric:tabular-nums;
   }
-  .nav-tab.active .tab-tag{background:rgba(255,255,255,.22);color:#fff}
+  .prow:hover,.rrow:hover{background:#f8f9fe}
+  .prow:last-child,.rrow:last-child{border-bottom:none}
+  .prow .idx{color:var(--ink3);font-family:var(--mono);text-align:right}
+  .prow .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .prow .pscore,.prow .ptime{font-family:var(--mono);text-align:right;color:var(--ink2)}
+  .rrow{
+    display:grid;
+    grid-template-columns:155px 1fr;
+    gap:10px;
+    padding:4.5px 10px;
+    font-size:11.5px;
+    border-bottom:1px solid #f2f4f9;
+  }
+  .rk{font-family:var(--mono);color:var(--ink3);overflow:hidden;text-overflow:ellipsis}
+  .rv{font-family:var(--mono);color:var(--ink2);word-break:break-all}
+  .kv{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(135px,1fr));
+    gap:7px 14px;
+    margin-top:10px;
+    padding-top:9px;
+    border-top:1px dashed var(--line);
+    font-size:12px;
+  }
+  .kv div span{color:var(--ink3);display:block;font-size:10.5px}
+  .kv div b{font-weight:600;font-family:var(--mono);font-size:12px}
+  .dnote{grid-column:1/-1;color:var(--ink3);font-size:12.5px;padding:6px 4px}
+
+  /* ---------- 空态 / Toast / 弹窗 ---------- */
+  .empty{padding:44px 20px;text-align:center;color:var(--ink3)}
+  .empty b{display:block;color:var(--ink2);font-size:14.5px;margin-bottom:5px}
+  .empty code{
+    background:var(--accentbg);
+    color:var(--accent);
+    padding:2px 6px;
+    border-radius:5px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  #toast{
+    position:fixed;
+    left:50%;
+    bottom:22px;
+    transform:translate(-50%,16px);
+    background:#1f1b3d;
+    color:#fff;
+    padding:8px 16px;
+    border-radius:9px;
+    font-size:12.5px;
+    font-weight:500;
+    opacity:0;
+    pointer-events:none;
+    transition:.2s ease;
+    box-shadow:0 8px 24px rgba(18,14,44,.28);
+    z-index:99;
+  }
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  .dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    display:inline-block;
+    vertical-align:middle;
+    flex:none;
+  }
+  .dot.live{background:#19a964;box-shadow:0 0 0 3px rgba(25,169,100,.18)}
+  .dot.pause{background:#a8b0c7}
+  textarea{
+    width:100%;
+    min-height:120px;
+    font-family:var(--mono);
+    font-size:12px;
+    border:1px solid var(--line2);
+    border-radius:8px;
+    padding:10px;
+    background:var(--panel2);
+    outline:none;
+    resize:vertical;
+    color:var(--ink);
+  }
+  textarea:focus{border-color:var(--accent2);background:#fff}
+  dialog{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:0;
+    box-shadow:0 20px 60px rgba(18,16,44,.22);
+    max-width:500px;
+    width:92%;
+  }
+  dialog::backdrop{background:rgba(18,16,40,.32);backdrop-filter:blur(2px)}
+  .dlg-h{padding:16px 18px 0;font-size:15px;font-weight:700}
+  .dlg-b{padding:10px 18px 14px}
+  .dlg-f{padding:0 18px 16px;display:flex;gap:8px;justify-content:flex-end}
+
+  /* ---------- GOC 奇术终端 & RX 美化资源站 ---------- */
   .goc-bar{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;
-    font-size:13px;color:var(--ink2);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:7px 12px;
+    font-size:12.5px;
+    color:var(--ink2);
+    box-shadow:var(--shadow-xs);
   }
   .goc-bar b{color:var(--ink)}
   .goc-wrap{
-    border-radius:12px;overflow:hidden;border:1px solid #155780;background:#101f37;
-    box-shadow:0 12px 34px rgba(16,28,56,.14);
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid #1b4d78;
+    background:#0e1c33;
+    box-shadow:0 10px 30px rgba(14,26,52,.16);
   }
-  #goc-frame{display:block;width:100%;height:670px;border:0;background:#101f37}
+  #goc-frame{
+    display:block;
+    width:100%;
+    height:680px;
+    border:0;
+    background:#0e1c33;
+  }
 
-  /* ---------- RX 美化资源站 ---------- */
   .rx-crumbs{
-    display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1 1 260px;min-width:180px;
-    font-size:13px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    flex-wrap:wrap;
+    flex:1 1 260px;
+    min-width:180px;
+    font-size:12.5px;
   }
   .rx-crumb{
-    background:var(--panel2);color:var(--ink2);border:1px solid var(--line);
-    border-radius:7px;padding:4px 9px;font-size:12.5px;font-weight:600;
+    background:var(--panel2);
+    color:var(--ink2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:3px 9px;
+    height:27px;
+    font-size:12px;
+    font-weight:600;
   }
-  .rx-crumb:hover{border-color:#c9c2f8;color:var(--accent)}
-  .rx-crumb.cur{background:var(--accentbg);color:var(--accent);border-color:#c9c2f8}
-  .rx-sep{color:var(--ink3);font-size:12px;padding:0 1px}
-  #rx-search{flex:1 1 220px;min-width:160px}
+  .rx-crumb:hover{border-color:var(--accent-line);color:var(--accent)}
+  .rx-crumb.cur{background:var(--accentbg);color:var(--accent);border-color:var(--accent-line)}
+  .rx-sep{color:var(--ink3);font-size:11.5px;padding:0 1px}
+  #rx-search{flex:0 1 260px;min-width:170px;height:28px}
   .rx-name{display:flex;align-items:center;gap:8px;font-weight:500}
   .rx-name.dir{font-weight:600;color:var(--ink)}
-  .rx-parent{font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .rx-parent{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:2px;padding-left:23px}
   .rx-icon{font-size:15px;line-height:1;flex:none}
-  .rx-meta{font-family:var(--mono);font-size:12.5px;color:var(--ink2);white-space:nowrap}
+  .rx-meta{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink2);
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
   #rx-tbody .actions button,#rx-tbody .actions a{opacity:1}
   .rx-readme{
-    margin-top:14px;padding:14px 16px;border-radius:10px;background:var(--panel);
-    border:1px solid var(--line);font-size:13px;line-height:1.7;color:var(--ink2);
+    margin-top:10px;
+    padding:12px 15px;
+    border-radius:11px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    font-size:12.5px;
+    line-height:1.65;
+    color:var(--ink2);
     word-break:break-word;
+    box-shadow:var(--shadow-xs);
   }
-  .rx-readme b{display:block;color:var(--ink);margin-bottom:4px;font-size:13.5px}
-  .rx-readme a{color:var(--accent);text-decoration:none}
+  .rx-readme b{display:block;color:var(--ink);margin-bottom:4px;font-size:13px}
+  .rx-readme a{color:var(--accent);text-decoration:none;font-weight:500}
   .rx-readme a:hover{text-decoration:underline}
-  .rx-more{padding:12px;text-align:center;border-top:1px solid var(--line);background:var(--panel2)}
+  .rx-more{padding:10px;text-align:center;border-top:1px solid var(--line);background:var(--panel2)}
   .rx-embed-wrap{
-    border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel);
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    background:var(--panel);
+    box-shadow:var(--shadow-sm);
   }
-  #rx-frame{display:block;width:100%;height:78vh;min-height:640px;border:0;background:#fff}
+  #rx-frame{
+    display:block;
+    width:100%;
+    height:calc(100vh - 140px);
+    min-height:620px;
+    border:0;
+    background:#fff;
+  }
 
-  /* ---------- 响应式：按宽度逐步收起次要列 ---------- */
-  @media(max-width:1400px){
-    .name{max-width:290px}
-  }
-  @media(max-width:1520px){
+  /* ---------- 响应式断点（完整适配 960px 最小窗口 ~ 1600px+ 宽屏） ---------- */
+  @media(max-width:1440px){
     .col-addr{display:none}
-    .name-addr{display:block}
-    .name{max-width:250px}
+    .name-addr{display:inline}
+    .name{max-width:280px}
+  }
+  @media(max-width:1220px){
+    .brand .sub{display:none}
+    .name{max-width:240px}
   }
   @media(max-width:1080px){
     .col-map{display:none}
     .col-copy{display:none}
-    #addr{flex:1 1 100%}
+    #filter{flex:1 1 160px}
   }
   @media(max-width:920px){
     .col-mode{display:none}
-    .name{max-width:230px}
-    .actions button{padding:4px 7px}
+    .name{max-width:210px}
   }
   @media(max-width:780px){
     .col-lat{display:none}
-    .name{max-width:220px}
+    .name{max-width:190px}
   }
   @media(max-width:660px){
-    /* 回合列不隐藏：它是最有价值的一列，宁可让表格横向滚动（.table-wrap 已有 overflow-x:auto），
-       也不要在窄面板里直接把"回合数 / 剩余时间"整列抹掉。 */
+    /* 回合列不隐藏：它是最核心的对局进度列 */
     .col-round{display:table-cell}
-    .app{padding:16px 12px 50px}
-    .stats{width:100%;margin-left:0}
-    .stat{flex:1;min-width:0}
-    td{padding:9px 9px}
-    thead th{padding:9px 9px}
-    .actions button{padding:3px 5px;font-size:11px}
-    .name{max-width:190px}
+    .app{padding:10px 10px 36px}
+    .top{position:static;padding:8px 10px}
+    .top-env{width:100%;margin-left:0}
+    .stats{width:100%}
+    .stat{flex:1;justify-content:center}
+    td,thead th{padding:7px 8px}
+    .name{max-width:175px}
     .meter{width:34px}
   }
-
 </style>
 </head>
 <body>
 <div class="app">
 
-  <div class="top">
+  <!-- 一体化常驻桌面顶栏：品牌 + 三模块胶囊导航 + 本机环境状态组 -->
+  <header class="top">
     <div class="brand">
       <div class="logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
           <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/><path d="M11 8v6M8 11h6" stroke-width="1.6"/>
         </svg>
       </div>
-      <div>
+      <div class="brand-text">
         <h1>NeoProbe</h1>
-        <div class="sub">Garry's Mod / Source 服务器监控 · 自动挤服 · GOC 训练 · RX 美化资源站</div>
+        <div class="sub">GMod / Source 监控 · 自动挤服 · GOC 训练 · RX 资源站</div>
       </div>
     </div>
-    <div class="stats">
-      <div class="stat"><b id="s-online">0</b><span>在线</span></div>
-      <div class="stat"><b id="s-total">0</b><span>监视中</span></div>
-      <div class="stat"><b id="s-players">0</b><span>总玩家</span></div>
+
+    <div class="nav-tabs" role="tablist" aria-label="功能模块">
+      <button class="nav-tab active" id="tab-servers" data-view="servers" role="tab" aria-selected="true" type="button">服务器监控</button>
+      <button class="nav-tab" id="tab-goc" data-view="goc" role="tab" aria-selected="false" type="button" title="排队挤服或等局期间随时练习 GOC 奇术解密">
+        ✧ GOC 奇术终端 <span class="tab-tag">训练模式</span>
+      </button>
+      <button class="nav-tab" id="tab-rx" data-view="rx" role="tab" aria-selected="false" type="button" title="浏览与下载 RX 美化包与常用资源（rx.l1ght.xyz）">
+        RX 美化资源站 <span class="tab-tag">网盘</span>
+      </button>
     </div>
-  </div>
 
-  <div class="nav-tabs" role="tablist" aria-label="功能模块">
-    <button class="nav-tab active" id="tab-servers" data-view="servers" role="tab" aria-selected="true" type="button">服务器监控</button>
-    <button class="nav-tab" id="tab-goc" data-view="goc" role="tab" aria-selected="false" type="button" title="排队挤服或等局期间随时练习 GOC 奇术解密">
-      ✧ GOC 奇术终端 <span class="tab-tag">训练模式</span>
-    </button>
-    <button class="nav-tab" id="tab-rx" data-view="rx" role="tab" aria-selected="false" type="button" title="浏览与下载 RX 美化包与常用资源（rx.l1ght.xyz）">
-      RX 美化资源站 <span class="tab-tag">网盘</span>
-    </button>
-  </div>
+    <div class="top-env">
+      <button class="vip-chip" id="vip-chip" type="button" title="点击查看身份详情">
+        <b id="vip-text">身份…</b>
+      </button>
+      <div class="game-chip" id="game-chip" title="点击设置 Garry's Mod 路径">
+        <span class="dot pause" id="game-dot"></span>
+        <b id="game-text">检测中…</b>
+      </div>
+      <div class="game-chip" id="probe-chip" title="本机客户端回合探针">
+        <span class="dot pause" id="probe-dot"></span>
+        <b id="probe-text">探针待用</b>
+      </div>
+      <button class="btn-launch" id="btn-launch" type="button">启动游戏</button>
+    </div>
+  </header>
 
+  <!-- 紧贴顶栏展开的 VIP 身份详情抽屉 & 常驻排队挤服横幅 -->
+  <div id="vip-panel" class="vip-panel" hidden></div>
   <div id="queue-banner" hidden></div>
 
   <section id="view-servers">
-  <div class="bar">
-    <input id="addr" type="text" placeholder="输入任意服务器地址，如 1.2.3.4:27015 / play.example.com:27015 / steam://connect/1.2.3.4:27015" autocomplete="off">
-    <button class="btn-primary" id="btn-add">添加并查询</button>
-    <button class="btn-ghost" id="btn-bulk">批量添加</button>
-    <div class="grow"></div>
-    <button class="vip-chip" id="vip-chip" type="button" title="点击查看身份详情">
-      <b id="vip-text">身份…</b>
-    </button>
-    <div class="game-chip" id="game-chip" title="点击设置 Garry's Mod 路径">
-      <span class="dot pause" id="game-dot"></span>
-      <b id="game-text">检测中…</b>
+    <div class="console-bar">
+      <!-- 主操作行：KPI 统计胶囊 + 搜索过滤 + 刷新控制 -->
+      <div class="bar-primary">
+        <div class="stats">
+          <div class="stat stat-online"><span class="dot live"></span><span>在线</span><b id="s-online">0</b></div>
+          <div class="stat"><span>监视中</span><b id="s-total">0</b></div>
+          <div class="stat stat-players"><span>总玩家</span><b id="s-players">0</b></div>
+        </div>
+        <div class="grow"></div>
+        <input id="filter" type="text" placeholder="过滤名称 / 地图 / 地址 (按 / 聚焦)" autocomplete="off">
+        <div class="bar-sep"></div>
+        <select id="interval" title="自动刷新间隔">
+          <option value="5">每 5 秒</option>
+          <option value="10">每 10 秒</option>
+          <option value="15" selected>每 15 秒</option>
+          <option value="30">每 30 秒</option>
+          <option value="60">每 60 秒</option>
+        </select>
+        <button class="btn-ghost" id="btn-auto" type="button">暂停</button>
+        <button class="btn-ghost" id="btn-refresh" type="button">全部刷新</button>
+      </div>
+      <!-- 紧凑副栏：快速添加服务器 -->
+      <div class="bar-secondary">
+        <span class="bar-label">＋ 添加服务器</span>
+        <input id="addr" type="text" placeholder="输入服务器地址，如 1.2.3.4:27015 / play.example.com:27015 / steam://connect/1.2.3.4:27015" autocomplete="off">
+        <button class="btn-primary" id="btn-add" type="button">添加并查询</button>
+        <button class="btn-ghost" id="btn-bulk" type="button">批量添加</button>
+      </div>
     </div>
-    <div class="game-chip" id="probe-chip" title="本机客户端回合探针">
-      <span class="dot pause" id="probe-dot"></span>
-      <b id="probe-text">探针待用</b>
-    </div>
-    <button class="btn-launch" id="btn-launch">启动游戏</button>
-    <input id="filter" type="text" placeholder="过滤名称 / 地图 / 地址" autocomplete="off">
-    <select id="interval" title="自动刷新间隔">
-      <option value="5">每 5 秒</option>
-      <option value="10">每 10 秒</option>
-      <option value="15" selected>每 15 秒</option>
-      <option value="30">每 30 秒</option>
-      <option value="60">每 60 秒</option>
-    </select>
-    <button class="btn-ghost" id="btn-auto">暂停</button>
-    <button class="btn-ghost" id="btn-refresh">全部刷新</button>
-  </div>
 
-  <div id="vip-panel" class="vip-panel" hidden></div>
-
-  <div class="panel">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th data-sort="name">服务器</th>
-            <th data-sort="map" class="col-map">地图</th>
-            <th data-sort="rounds" class="col-round">回合 / 空位</th>
-            <th data-sort="players">人数</th>
-            <th data-sort="rtt" class="col-lat">延迟</th>
-            <th data-sort="mode" class="col-mode">模式</th>
-            <th data-sort="address" class="col-addr">地址</th>
-            <th style="text-align:right">操作</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="name">服务器</th>
+              <th data-sort="map" class="col-map">地图</th>
+              <th data-sort="rounds" class="col-round">回合 / 空位</th>
+              <th data-sort="players">人数</th>
+              <th data-sort="rtt" class="col-lat" style="text-align:right">延迟</th>
+              <th data-sort="mode" class="col-mode">模式</th>
+              <th data-sort="address" class="col-addr">地址</th>
+              <th style="text-align:right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="empty" hidden>
+        <b>还没有监视任何服务器</b>
+        在上方输入地址后回车即可添加，例如 <code>127.0.0.1:27015</code><br>
+        <span style="font-size:12px">支持 IP、域名、IPv6（<code>[::1]:27015</code>）与 <code>steam://connect/</code> 链接</span>
+      </div>
     </div>
-    <div class="empty" id="empty" hidden>
-      <b>还没有监视任何服务器</b>
-      在上方输入地址后回车即可添加，例如 <code>127.0.0.1:27015</code><br>
-      <span style="font-size:12.5px">支持 IP、域名、IPv6（<code>[::1]:27015</code>）与 <code>steam://connect/</code> 链接</span>
-    </div>
-  </div>
   </section>
 
   <section id="view-goc" hidden>
@@ -469,7 +1347,7 @@
 
   <section id="view-rx" hidden>
     <div class="goc-bar">
-      <span><b>RX 美化资源站</b>（直连 <a href="https://rx.l1ght.xyz/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">rx.l1ght.xyz</a> · OpenList Powered by L1gHT <span id="rx-announce" class="muted"></span>）</span>
+      <span><b>RX 美化资源站</b>（直连 <a href="https://rx.l1ght.xyz/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:600">rx.l1ght.xyz</a> · OpenList Powered by L1gHT <span id="rx-announce" class="muted"></span>）</span>
       <div class="grow"></div>
       <button class="btn-ghost btn-sm" id="btn-rx-mode" type="button" title="在清爽原生列表和原站 OpenList 页面间切换">切换原站视图</button>
       <a class="btn-ghost btn-link btn-sm" href="https://rx.l1ght.xyz/" target="_blank" rel="noopener">新窗口打开</a>
@@ -521,12 +1399,12 @@
 <dialog id="dlg-bulk">
   <div class="dlg-h">批量添加</div>
   <div class="dlg-b">
-    <div class="sub" style="margin-bottom:8px">每行一个地址，也支持逗号分隔；重复项会自动跳过。</div>
+    <div class="sub" style="margin-bottom:8px;white-space:normal">每行一个地址，也支持逗号分隔；重复项会自动跳过。</div>
     <textarea id="bulk-text" placeholder="1.2.3.4:27015&#10;play.example.com:27015&#10;[2001:db8::1]:27015"></textarea>
   </div>
   <div class="dlg-f">
-    <button class="btn-ghost" onclick="document.getElementById('dlg-bulk').close()">取消</button>
-    <button class="btn-primary" id="btn-bulk-ok">添加</button>
+    <button class="btn-ghost" type="button" onclick="document.getElementById('dlg-bulk').close()">取消</button>
+    <button class="btn-primary" id="btn-bulk-ok" type="button">添加</button>
   </div>
 </dialog>
 
@@ -557,6 +1435,7 @@ const state = {
   sortKey: "name",
   sortDir: 1,
   openKey: null,
+  ruleFilter: "",
   details: new Map(),   // key -> {ts, data}
   detailBusy: new Set(),
   interval: 15,
@@ -637,7 +1516,7 @@ function renderVip() {
   const checked = v.checked_at ? new Date(v.checked_at * 1000).toLocaleTimeString("zh-CN", { hour12: false }) : "—";
 
   panel.innerHTML = `
-    <div class="item"><span>身份</span><b class="plain" style="${v.is_vip ? "color:#1f7a4d" : ""}">
+    <div class="item"><span>身份</span><b class="plain" style="${v.is_vip ? "color:#157f4b" : ""}">
       ${esc(v.identity || (v.is_vip ? "VIP" : "普通用户"))}${v.is_admin ? " · 管理员" : ""}</b></div>
     <div class="item"><span>是否 VIP</span><b class="plain">${v.is_vip ? "是" : "否"}</b></div>
     <div class="item"><span>到期时间</span><b>${esc(expire)}</b>${srcNote ? `<span style="display:inline;color:var(--ink3);font-size:11px">${esc(srcNote)}</span>` : ""}</div>
@@ -889,38 +1768,50 @@ function rowHtml(s) {
   const i = s.info || {};
   const key = s.address;
   const online = s.state === "ok";
+  const waiting = s.state === "querying" || s.state === "pending";
   const players = i.players ?? 0;
   const max = i.max_players ?? 0;
   const pct = max > 0 ? Math.min(100, Math.round(players / max * 100)) : 0;
+  const isFull = online && max > 0 && players >= max;
+  const meterCls = isFull ? "meter-full" : (pct >= 85 ? "meter-high" : "");
   const rtt = s.rtt_ms;
+  const dotCls = online ? "ok" : (waiting ? "wait" : "bad");
   const statusPill = online
     ? `<span class="pill pill-ok">在线</span>`
-    : s.state === "querying" || s.state === "pending"
+    : waiting
       ? `<span class="pill pill-wait">查询中</span>`
       : `<span class="pill pill-bad" title="${esc(s.error || "")}">离线</span>`;
 
   return `<tr class="row ${online ? "" : "offline"} ${state.openKey === key ? "open" : ""}" data-key="${esc(key)}">
     <td>
-      <div class="name" title="${esc(i.name || s.address)}">${esc(i.name || (online ? "(无名称)" : s.address))}</div>
-      <div class="name-addr">${esc(s.address)}</div>
-      <div style="margin-top:3px">${statusPill}${online && i.vac === 1 ? ' <span class="pill pill-ok" style="background:#eef2ff;color:#4457c8">VAC</span>' : ""}</div>
+      <div class="srv-main">
+        <span class="s-dot ${dotCls}"></span>
+        <div class="name" title="${esc(i.name || s.address)}">${esc(i.name || (online ? "(无名称)" : s.address))}</div>
+      </div>
+      <div class="srv-sub">
+        ${statusPill}
+        ${online && i.vac === 1 ? '<span class="pill pill-vac">VAC</span>' : ""}
+        <span class="name-addr">${esc(s.address)}</span>
+      </div>
     </td>
-    <td class="map col-map" title="${esc(i.map || "")}">${esc(i.map || "—")}</td>
+    <td class="map col-map" title="${esc(i.map || "")}">${i.map ? `<span class="map-tag">${esc(i.map)}</span>` : `<span class="muted">—</span>`}</td>
     ${roundCell(s)}
     <td>
       <div class="bar-wrap">
-        <span class="num">${online ? `${players}<span class="muted">/${max}</span>` : "—"}</span>
-        <span class="meter"><i style="width:${pct}%"></i></span>
+        <span class="num ${isFull ? "is-full" : ""}">${online ? `${players}<span class="muted">/${max}</span>` : "—"}</span>
+        <span class="meter ${meterCls}"><i style="width:${pct}%"></i></span>
       </div>
     </td>
-    <td class="col-lat"><span class="lat ${latClass(rtt)}">${rtt != null ? Math.round(rtt) + " ms" : "—"}</span></td>
+    <td class="col-lat" style="text-align:right"><span class="lat ${latClass(rtt)}">${rtt != null ? Math.round(rtt) + " ms" : "—"}</span></td>
     <td class="col-mode"><span class="pill pill-mode" title="${esc(gamemode(s))}">${esc(gamemode(s))}</span></td>
     <td class="addr col-addr">${esc(s.address)}</td>
     <td class="actions">
-      ${joinButton(s, online, players, max)}
-      <button class="btn-ghost btn-sm col-copy" data-act="copy" data-key="${esc(key)}" title="复制地址">复制</button>
-      <button class="btn-ghost btn-sm col-refresh" data-act="refresh" data-key="${esc(key)}" title="重新查询">刷新</button>
-      <button class="btn-ghost btn-sm col-remove" data-act="remove" data-key="${esc(key)}" title="移出列表">移除</button>
+      <div class="actions-inner">
+        ${joinButton(s, online, players, max)}
+        <button class="btn-ghost btn-sm col-copy" data-act="copy" data-key="${esc(key)}" title="复制地址">复制</button>
+        <button class="btn-ghost btn-sm col-refresh" data-act="refresh" data-key="${esc(key)}" title="重新查询">刷新</button>
+        <button class="btn-ghost btn-sm col-remove" data-act="remove" data-key="${esc(key)}" title="移出列表">移除</button>
+      </div>
     </td>
   </tr>`;
 }
@@ -936,7 +1827,7 @@ function joinButton(s, online, players, max) {
     return `<button class="btn-queue btn-sm col-join" data-act="queue" data-key="${esc(key)}"
       title="服务器已满：持续监视，一有空位就自动进服">挤服</button>`;
   }
-  return `<button class="btn-ghost btn-sm col-join" data-act="join" data-key="${esc(key)}"
+  return `<button class="btn-join btn-sm col-join" data-act="join" data-key="${esc(key)}"
     title="启动游戏并连接该服务器">进服</button>`;
 }
 
@@ -1012,9 +1903,7 @@ async function stopQueue() {
 
 function detailHtml(s) {
   const d = state.details.get(s.address);
-  if (!d || !d.ok) {
-    const msg = d && d.error ? esc(d.error) : "正在读取玩家与规则…";
-    const mi = s.mapinfo;
+  const mi = s.mapinfo;
   let mapBlock = "";
   if (mi && mi.since != null) {
     const avg = mi.avg_duration ? fmtSpan(mi.avg_duration) : null;
@@ -1034,7 +1923,9 @@ function detailHtml(s) {
     </div>`;
   }
 
-  return `<tr class="detail"><td colspan="8"><div class="detail-inner">
+  if (!d || !d.ok) {
+    const msg = d && d.error ? esc(d.error) : "正在读取玩家与规则…";
+    return `<tr class="detail"><td colspan="8"><div class="detail-inner">
       <div class="dnote">${msg}</div></div></td></tr>`;
   }
   const i = d.info || {};
@@ -1053,8 +1944,13 @@ function detailHtml(s) {
         d.players_error ? esc(d.players_error) : "没有玩家或服务器未返回玩家列表"}</div></div>`;
 
   const ruleKeys = Object.keys(rules);
+  const rf = (state.ruleFilter || "").trim().toLowerCase();
   const rRows = ruleKeys.length
-    ? ruleKeys.map((k) => `<div class="rrow"><div class="rk" title="${esc(k)}">${esc(k)}</div><div class="rv">${esc(rules[k])}</div></div>`).join("")
+    ? ruleKeys.map((k) => {
+        const v = String(rules[k] ?? "");
+        const hide = rf && !k.toLowerCase().includes(rf) && !v.toLowerCase().includes(rf);
+        return `<div class="rrow"${hide ? " hidden" : ""}><div class="rk" title="${esc(k)}">${esc(k)}</div><div class="rv">${esc(v)}</div></div>`;
+      }).join("")
     : `<div class="rrow" style="grid-template-columns:1fr"><div class="rv muted">${
         d.rules_error ? esc(d.rules_error) : "服务器未返回规则"}</div></div>`;
 
@@ -1196,19 +2092,23 @@ function detailHtml(s) {
   }
 
   return `<tr class="detail"><td colspan="8"><div class="detail-inner">
-    <div class="dsec" style="grid-column:1/-1">
-      <h4>对局 <span class="cnt">${r && r.time_left != null ? "live" : "实时"}</span></h4>
-      ${roundBlock}
+    <div class="detail-top-grid">
+      <div class="dsec">
+        <h4>对局 <span class="cnt">${r && r.time_left != null ? "live" : "实时"}</span></h4>
+        ${roundBlock}
+      </div>
+      ${slotsBlock}
+      ${mapBlock}
     </div>
-    ${slotsBlock}
-    ${mapBlock}
     <div class="dsec">
       <h4>玩家 <span class="cnt">${players.length}</span></h4>
       <div class="players">${pHead}${pRows}</div>
       <div class="kv">${kv.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>
     </div>
     <div class="dsec">
-      <h4>服务器规则 (A2S_RULES) <span class="cnt">${ruleKeys.length}</span></h4>
+      <h4>服务器规则 (A2S_RULES) <span class="cnt">${ruleKeys.length}</span>
+        ${ruleKeys.length ? `<input type="text" class="rule-search" data-rule-search placeholder="搜索规则键 / 值…" value="${esc(state.ruleFilter || "")}" autocomplete="off">` : ""}
+      </h4>
       <div class="rules"><div class="rhead"><div>键</div><div>值</div></div>${rRows}</div>
     </div>
   </div></td></tr>`;
@@ -1227,6 +2127,11 @@ function captureScroll() {
   document.querySelectorAll(".players, .rules, .table-wrap").forEach((el) => {
     out[el.className.split(" ")[0]] = el.scrollTop;
   });
+  const rs = document.querySelector("[data-rule-search]");
+  if (rs && document.activeElement === rs) {
+    out._ruleFocus = true;
+    out._rulePos = rs.selectionStart;
+  }
   return out;
 }
 
@@ -1235,6 +2140,13 @@ function restoreScroll(map) {
     const v = map[el.className.split(" ")[0]];
     if (v) el.scrollTop = v;
   });
+  if (map._ruleFocus) {
+    const rs = document.querySelector("[data-rule-search]");
+    if (rs) {
+      rs.focus();
+      if (typeof map._rulePos === "number") rs.setSelectionRange(map._rulePos, map._rulePos);
+    }
+  }
 }
 
 let lastSig = "";
@@ -1511,7 +2423,26 @@ document.querySelectorAll("thead th[data-sort]").forEach((th) => {
   };
 });
 
+$("tbody").addEventListener("input", (e) => {
+  const rs = e.target.closest("[data-rule-search]");
+  if (!rs) return;
+  state.ruleFilter = rs.value;
+  const kw = rs.value.trim().toLowerCase();
+  const sec = rs.closest(".dsec");
+  if (!sec) return;
+  sec.querySelectorAll(".rrow").forEach((row) => {
+    const rk = row.querySelector(".rk");
+    if (!rk) return;
+    const text = row.textContent.toLowerCase();
+    row.hidden = Boolean(kw && !text.includes(kw));
+  });
+});
+
 $("tbody").addEventListener("click", async (e) => {
+  if (e.target.closest("[data-rule-search]")) {
+    e.stopPropagation();
+    return;
+  }
   const btn = e.target.closest("button[data-act]");
   if (btn) {
     e.stopPropagation();
@@ -1824,7 +2755,7 @@ function rxRender() {
           + `</td>`
           + `<td class="rx-meta">—</td>`
           + `<td class="rx-meta">${esc(rxFmtTime(x.modified))}</td>`
-          + `<td class="actions"><button class="btn-ghost btn-sm" type="button" data-rx-open="${idx}">打开目录</button></td>`
+          + `<td class="actions"><div class="actions-inner"><button class="btn-ghost btn-sm" type="button" data-rx-open="${idx}">打开目录</button></div></td>`
           + `</tr>`;
       }
       const dHref = x.sign ? rxDirectUrl(x.fullPath, x.sign) : webHref;
@@ -1834,12 +2765,12 @@ function rxRender() {
         + `</td>`
         + `<td class="rx-meta">${esc(rxFmtSize(x.size, false))}</td>`
         + `<td class="rx-meta">${esc(rxFmtTime(x.modified))}</td>`
-        + `<td class="actions">`
+        + `<td class="actions"><div class="actions-inner">`
         + (x.sign
-            ? `<a class="btn-primary btn-link btn-sm" href="${esc(dHref)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">下载</a> `
-            : `<button class="btn-primary btn-sm" type="button" data-rx-dl="${idx}">下载</button> `)
+            ? `<a class="btn-primary btn-link btn-sm" href="${esc(dHref)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">下载</a>`
+            : `<button class="btn-primary btn-sm" type="button" data-rx-dl="${idx}">下载</button>`)
         + `<button class="btn-ghost btn-sm" type="button" data-rx-copy="${idx}">复制</button>`
-        + `</td></tr>`;
+        + `</div></td></tr>`;
     }).join("");
     more.hidden = rxState.items.length >= rxState.total;
   }
