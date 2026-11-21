@@ -17,7 +17,8 @@ from .manager import QueryManager, default_data_dir
 
 
 class C:
-    on = sys.stdout.isatty()
+    # 窗口版（打包成 --noconsole）里 sys.stdout 可能是 None，不能直接 .isatty()
+    on = bool(getattr(sys.stdout, "isatty", lambda: False)())
 
     @classmethod
     def _w(cls, code: str, s: str) -> str:
@@ -251,7 +252,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="登记本地到期日（YYYY-MM-DD），服务端不返回到期时间时用它倒数；传空串清除")
     p.add_argument("--game", action="store_true", help="只打印 Garry's Mod / Steam 的检测结果")
     p.add_argument("--dry-run", action="store_true", help="只打印将要执行的启动命令，不真的启动")
-    p.add_argument("--serve", action="store_true", help="启动本地 Web 面板")
+    p.add_argument("--serve", action="store_true", help="启动本地 Web 面板（用浏览器看）")
+    p.add_argument("--desktop", action="store_true",
+                   help="启动桌面窗口版（原生窗口，不用浏览器；双击 exe 默认就是这个）")
+    p.add_argument("--debug-window", action="store_true",
+                   help="桌面窗口版打开开发者工具（排查界面问题用）")
     p.add_argument("--host", default="127.0.0.1", help="Web 面板监听地址（默认 127.0.0.1）")
     p.add_argument("--port", type=int, default=8777, help="Web 面板端口（默认 8777）")
     p.add_argument("--cors-origin", action="append", default=[], metavar="ORIGIN",
@@ -363,6 +368,11 @@ def _print_vip(info: dict) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     data_dir = Path(args.data_dir) if args.data_dir else default_data_dir()
+
+    # --desktop：原生窗口（双击 exe 走的就是这里）
+    if args.desktop:
+        from .desktop import run as run_desktop
+        return run_desktop(args)
 
     # --vip：身份 / VIP
     if args.vip or args.vip_expire is not None:

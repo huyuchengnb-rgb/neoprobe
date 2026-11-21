@@ -6,14 +6,65 @@ import json
 import mimetypes
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from pathlib import Path, PurePosixPath
+from urllib.parse import parse_qs, unquote, urlparse
 
 from . import a2s
 from .manager import QueryManager
 
 WEB_DIR = Path(__file__).parent / "web"
 MAX_BODY = 1 << 20
+_MIME_FALLBACK = {
+    ".html": "text/html",
+    ".css": "text/css",
+    ".js": "application/javascript",
+    ".json": "application/json",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+    ".svg": "image/svg+xml",
+    ".mp3": "audio/mpeg",
+    ".ogg": "audio/ogg",
+    ".wav": "audio/wav",
+}
+
+
+def _safe_rel_web_path(raw_rel: str) -> PurePosixPath | None:
+    """校验静态文件相对路径，拒绝绝对路径、空段异常与 .. 目录穿越。"""
+    text = unquote(raw_rel or "").replace("\\", "/")
+    if not text or text.startswith("/") or "\x00" in text:
+        return None
+    parts = [p for p in text.split("/") if p not in ("", ".")]
+    if not parts or any(p == ".." for p in parts):
+        return None
+    return PurePosixPath(*parts)
+
+
+def _parse_range(header: str | None, total: int) -> tuple[int, int] | None | str:
+    """解析单个 HTTP Range（bytes=start-end）。无效返回 'invalid'，无头返回 None。"""
+    if not header:
+        return None
+    val = header.strip()
+    if not val.lower().startswith("bytes="):
+        return None
+    spec = val[6:].split(",", 1)[0].strip()
+    if "-" not in spec:
+        return "invalid"
+    start_s, end_s = spec.split("-", 1)
+    try:
+        if not start_s:
+            length = int(end_s)
+            if length <= 0 or total <= 0:
+                return "invalid"
+            start = max(0, total - length)
+            end = total - 1
+        else:
+            start = int(start_s)
+            end = int(end_s) if end_s else total - 1
+    except ValueError:
+        return "invalid"
+    if start < 0 or end < start or start >= total:
+        return "invalid"
+    return start, min(end, total - 1)
 
 
 class Api:
@@ -121,15 +172,48 @@ def make_handler(api: Api, cors_origins=()):
                 return {}
 
         # -------------------------------------------------- 路由
+        def do_HEAD(self) -> None:
+            url = urlparse(self.path)
+            path = url.path
+            if self._try_serve_static(path, head_only=True):
+                return
+            self.send_response(404)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def _try_serve_static(self, path: str, head_only: bool = False) -> bool:
+            if path in ("/", "/index.html"):
+                self._serve_rel(PurePosixPath("index.html"), head_only=head_only)
+                return True
+            if path == "/goc.html":
+                self._serve_rel(PurePosixPath("goc.html"), head_only=head_only)
+                return True
+            if path == "/favicon.png":
+                self._serve_rel(PurePosixPath("favicon.png"), head_only=head_only)
+                return True
+            if path.startswith("/assets/"):
+                rel = _safe_rel_web_path("assets/" + path[len("/assets/"):])
+                if rel is None:
+                    self._err("非法路径", 403)
+                else:
+                    self._serve_rel(rel, head_only=head_only)
+                return True
+            if path.startswith("/static/"):
+                rel = _safe_rel_web_path(path[len("/static/"):])
+                if rel is None:
+                    self._err("非法路径", 403)
+                else:
+                    self._serve_rel(rel, head_only=head_only)
+                return True
+            return False
+
         def do_GET(self) -> None:
             url = urlparse(self.path)
             path = url.path
             qs = parse_qs(url.query)
 
-            if path in ("/", "/index.html"):
-                return self._serve_file(WEB_DIR / "index.html")
-            if path.startswith("/static/"):
-                return self._serve_file(WEB_DIR / path[len("/static/"):], safe=True)
+            if self._try_serve_static(path):
+                return
 
             if path == "/api/state":
                 return self._raw(api.state_bytes())
@@ -284,33 +368,68 @@ def make_handler(api: Api, cors_origins=()):
             return self._err("未找到该路径", 404)
 
         # -------------------------------------------------- 静态文件
-        def _serve_file(self, path: Path, safe: bool = False) -> None:
+        def _serve_rel(self, rel: PurePosixPath, head_only: bool = False) -> None:
+            rel_posix = rel.as_posix()
+            web_root = WEB_DIR.resolve()
+            disk_path = WEB_DIR.joinpath(*rel.parts)
+            data: bytes | None = None
             try:
-                resolved = path.resolve()
-                if safe and WEB_DIR.resolve() not in resolved.parents:
+                resolved = disk_path.resolve()
+                if web_root not in resolved.parents:
                     return self._err("非法路径", 403)
                 data = resolved.read_bytes()
             except OSError:
                 # 单文件 .pyz 里 web/ 在 zip 内，不是真实路径，改用包资源读取
                 import pkgutil
-                rel = path.relative_to(WEB_DIR).as_posix()
-                data = pkgutil.get_data(__package__, f"web/{rel}")
+                data = pkgutil.get_data(__package__, f"web/{rel_posix}")
                 if data is None:
                     return self._err("文件不存在", 404)
-            ctype = mimetypes.guess_type(str(resolved))[0] or "application/octet-stream"
+
+            suffix = rel.suffix.lower()
+            ctype = _MIME_FALLBACK.get(suffix) or mimetypes.guess_type(rel_posix)[0] or "application/octet-stream"
             if ctype.startswith("text/") or ctype in ("application/javascript",):
                 ctype += "; charset=utf-8"
+
+            total = len(data)
+            rng = _parse_range(self.headers.get("Range"), total)
+            if rng == "invalid":
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{total}")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+
+            if rng is not None:
+                start, end = rng
+                chunk = data[start:end + 1]
+                self.send_response(206)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
+                self.send_header("Content-Length", str(len(chunk)))
+                self.end_headers()
+                if not head_only:
+                    self.wfile.write(chunk)
+                return
+
             self.send_response(200)
             self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Content-Length", str(total))
             self.end_headers()
-            self.wfile.write(data)
+            if not head_only:
+                self.wfile.write(data)
 
     return Handler
 
 
-def serve(manager: QueryManager, host: str = "127.0.0.1", port: int = 8777,
-          open_browser: bool = True, cors_origins=()) -> None:
+def create_server(manager: QueryManager, host: str = "127.0.0.1", port: int = 8777,
+                  cors_origins=()) -> ThreadingHTTPServer:
+    """起后台采集线程 + 建好 HTTP 服务，但不进入阻塞循环。
+
+    桌面窗口版要把服务跑在子线程里，所以把"准备好"和"开始 serve_forever"拆开。
+    端口可以传 0，让系统分配空闲端口（窗口版就这么用，避免和已开的实例抢端口）。
+    """
     manager.start_auto()
     manager.start_rounds()
     manager.start_slots()
@@ -319,6 +438,13 @@ def serve(manager: QueryManager, host: str = "127.0.0.1", port: int = 8777,
     manager.refresh()
     httpd = ThreadingHTTPServer((host, port), make_handler(Api(manager), cors_origins=cors_origins))
     httpd.daemon_threads = True
+    return httpd
+
+
+def serve(manager: QueryManager, host: str = "127.0.0.1", port: int = 8777,
+          open_browser: bool = True, cors_origins=()) -> None:
+    httpd = create_server(manager, host=host, port=port, cors_origins=cors_origins)
+    port = httpd.server_address[1]
     url = f"http://{host}:{port}/"
     print(f"NeoProbe 已启动: {url}")
     print(f"数据目录: {manager.data_dir}")

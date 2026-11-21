@@ -27,32 +27,42 @@ NeoProbe —— 服务器监控面板
 ==========================
 
 【怎么看】
-  双击 NeoProbe.exe。
-  会弹出一个黑色窗口（这是程序的日志，别关），浏览器自动打开面板；
-  如果没有自动打开，手动访问：http://127.0.0.1:8777/
+  双击 NeoProbe.exe，直接弹出一个窗口。
+  没有黑色命令行窗口，也不用打开浏览器 —— 它自己就是一个桌面程序。
 
 【怎么关】
-  关掉那个黑色窗口就退出了。面板本身不常驻后台。
+  关窗口就是退出，后台不留进程。
+  重复双击不会开出第二个窗口，而是把已经开着的那个叫到前面来。
 
 【能做什么】
   · 一览所有服务器的人数 / 延迟 / 地图 / 在线状态（默认 15 秒刷新）
+  · 剩余回合 / 倒计时：按「还剩几局」挑服，提前安排
   · 一键进服：点「进服」直接启动 Garry's Mod 连上指定服务器
   · 自动挤服：服务器满员时点「挤服」，一有空位自动进服
+  · GOC 奇术终端：顶栏内置 4 关训练与考试计时，挂机挤服时切过去练手不中断抢位
+  · RX 美化资源站：顶栏直连 rx.l1ght.xyz 浏览、全站搜索与一键下载美化包
   · 查看身份：右上角标签显示是否 VIP（有到期数据时显示剩余天数）
 
 【数据存在哪】
-  %LOCALAPPDATA%\\NeoProbe\\servers.json
-  删掉这个文件等于恢复初始设置。
+  %LOCALAPPDATA%\\NeoProbe\\
+    servers.json   监控清单
+    window.json    窗口大小与位置（下次打开还原）
+    webview\\       界面偏好（排序、筛选等）
+    desktop.log    出问题时的日志，反馈问题请带上它
+  删掉整个目录 = 恢复初始设置。
 
 【常见问题】
   · Windows 提示"已保护你的电脑" → 点「更多信息」→「仍要运行」。
     程序没有购买代码签名证书，首次运行都会这样提示。
-  · 面板打不开 → 8777 端口被占用了。命令行执行：
-        NeoProbe.exe --serve --port 8888
-    然后访问 http://127.0.0.1:8888/
+  · 弹窗提示缺少 WebView2 运行时（老 Win10 才会）→ 装一次即可，微软官方：
+        https://go.microsoft.com/fwlink/p/?LinkId=2124703
+    装不了的话可以改用浏览器模式（会自动打开浏览器）：
+        NeoProbe.exe --serve
   · 想指定 Garry's Mod 路径：
-        NeoProbe.exe --serve --gmod "D:\\SteamLibrary\\steamapps\\common\\GarrysMod"
+        NeoProbe.exe --desktop --gmod "D:\\SteamLibrary\\steamapps\\common\\GarrysMod"
   · 没装 Steam / 装在别的盘也能用，只是「进服」会提示找不到游戏。
+  · 命令行功能（--vip / --queue / --json / 单次查询）在
+    「备用-py版本」里：python neoprobe.pyz --help
 
 【回合倒计时是怎么来的（重要）】
   数据来自社区接口 status.php（和原启动器同一个地址、同一套字段），
@@ -108,12 +118,17 @@ def build_exe() -> Path | None:
         print("! 未安装 PyInstaller，跳过 exe（pip install pyinstaller 后可出单文件 exe）")
         return None
 
+    # --windowed：双击不弹黑窗口、全程没有控制台。
+    # 界面在 WebView2 里渲染，所以要把 pywebview 连同它自带的 WebView2 组件一起收进去。
     cmd = [
-        sys.executable, "-m", "PyInstaller", "--noconfirm", "--onefile", "--console",
+        sys.executable, "-m", "PyInstaller", "--noconfirm", "--onefile", "--windowed",
         "--name", "NeoProbe",
         "--distpath", str(DIST), "--workpath", str(BUILD), "--specpath", str(BUILD),
         "--paths", str(ROOT),
         "--add-data", f"{ROOT / 'neoprobe' / 'web'};neoprobe/web",
+        "--collect-all", "webview",
+        "--hidden-import", "webview.platforms.winforms",
+        "--hidden-import", "clr",
         "--version-file", str(ROOT / "tools" / "version_info.txt"),
         str(ROOT / "tools" / "entry.py"),
     ]
@@ -156,11 +171,11 @@ def make_zip(exe: Path | None, pyz: Path | None) -> Path | None:
                 "chcp 65001 >nul\r\n"
                 'cd /d "%~dp0"\r\n'
                 "echo 正在启动 NeoProbe ...\r\n"
-                "python neoprobe.pyz --serve\r\n"
+                "python neoprobe.pyz --desktop\r\n"
                 "if errorlevel 1 (\r\n"
                 "  echo.\r\n"
                 "  echo 启动失败：需要 Python 3.10+ 并已加入 PATH。\r\n"
-                "  echo 也可以直接双击上一层的 NeoProbe.exe。\r\n"
+                "  echo 也可以直接双击上一层的 NeoProbe.exe（窗口版，不需要 Python）。\r\n"
                 "  pause\r\n"
                 ")\r\n"
             )

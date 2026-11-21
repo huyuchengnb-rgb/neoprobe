@@ -33,7 +33,7 @@ def iter_files() -> list[tuple[Path, str]]:
     for path in sorted(PKG.rglob("*")):
         if path.is_dir() or "__pycache__" in path.parts:
             continue
-        if path.suffix not in (".py", ".html", ".md"):
+        if path.suffix not in (".py", ".html", ".md", ".mp3", ".png", ".ico", ".css", ".js"):
             continue
         items.append((path, str(path.relative_to(ROOT)).replace(os.sep, "/")))
     return items

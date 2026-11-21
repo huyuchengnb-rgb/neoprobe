@@ -135,5 +135,57 @@ class ServerCorsTest(unittest.TestCase):
             httpd.server_close()
 
 
+class LocalWebIntegrationTest(unittest.TestCase):
+    def test_serves_index_goc_and_range_audio(self):
+        api = server.Api(_DummyManager())
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(api))
+        port = httpd.server_address[1]
+        t = threading.Thread(target=httpd.serve_forever, daemon=True)
+        t.start()
+        try:
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+
+            conn.request("GET", "/")
+            r_idx = conn.getresponse()
+            idx_html = r_idx.read().decode("utf-8")
+            self.assertEqual(r_idx.status, 200)
+            self.assertIn('id="tab-goc"', idx_html)
+            self.assertIn('id="tab-rx"', idx_html)
+            self.assertIn('id="goc-frame"', idx_html)
+            self.assertIn("https://rx.l1ght.xyz", idx_html)
+
+            conn.request("GET", "/goc.html?embed=1")
+            r_goc = conn.getresponse()
+            goc_html = r_goc.read().decode("utf-8")
+            self.assertEqual(r_goc.status, 200)
+            self.assertIn("GOC 奇术终端", goc_html)
+            self.assertIn("./assets/goc-yuai.mp3", goc_html)
+
+            conn.request("GET", "/favicon.png")
+            r_fav = conn.getresponse()
+            fav_bytes = r_fav.read()
+            self.assertEqual(r_fav.status, 200)
+            self.assertEqual(r_fav.getheader("Content-Type"), "image/png")
+            self.assertGreater(len(fav_bytes), 100)
+
+            conn.request("GET", "/assets/goc-yuai.mp3", headers={"Range": "bytes=0-15"})
+            r_mp3 = conn.getresponse()
+            chunk = r_mp3.read()
+            self.assertEqual(r_mp3.status, 206)
+            self.assertEqual(r_mp3.getheader("Content-Type"), "audio/mpeg")
+            self.assertEqual(r_mp3.getheader("Accept-Ranges"), "bytes")
+            self.assertTrue((r_mp3.getheader("Content-Range") or "").startswith("bytes 0-15/"))
+            self.assertEqual(len(chunk), 16)
+
+            conn.request("GET", "/assets/../server.py")
+            r_bad = conn.getresponse()
+            r_bad.read()
+            self.assertEqual(r_bad.status, 403)
+            conn.close()
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
 if __name__ == "__main__":
     unittest.main()
